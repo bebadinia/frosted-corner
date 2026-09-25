@@ -19,9 +19,7 @@ public class OrderDataSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        demoOrders().stream()
-                .filter(order -> !orderRepository.existsById(order.getId()))
-                .forEach(orderRepository::save);
+        demoOrders().forEach(orderRepository::save);
     }
 
     private List<Order> demoOrders() {
