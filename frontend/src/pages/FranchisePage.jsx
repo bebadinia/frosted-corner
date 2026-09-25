@@ -140,27 +140,33 @@ export function FranchisePage({ currentUser: currentUserOverride }) {
       setSummary(result);
 
       if (isManager) {
-        const [availability, products, stores] = await Promise.all([
-          getProductAvailability(managerStoreId),
-          getProducts(),
-          getStores(),
-        ]);
-        const productsById = Object.fromEntries(products.map((product) => [product.id, product]));
-        setInventoryRows(
-          availability
-            .map((stock) => ({
-              ...stock,
-              product: productsById[stock.productId],
-            }))
-            .filter((row) => row.product && row.product.category !== "Subscriptions")
-            .slice(0, 8),
-        );
-        const store = stores.find((location) => location.id === managerStoreId);
-        setStoreLabel(
-          store
-            ? `${store.storeName} — ${store.city}, ${store.state}`
-            : managerStoreId,
-        );
+        try {
+          const [availability, products, stores] = await Promise.all([
+            getProductAvailability(managerStoreId),
+            getProducts(),
+            getStores(),
+          ]);
+          const productsById = Object.fromEntries(products.map((product) => [product.id, product]));
+          setInventoryRows(
+            availability
+              .map((stock) => ({
+                ...stock,
+                product: productsById[stock.productId],
+              }))
+              .filter((row) => row.product && row.product.category !== "Subscriptions")
+              .slice(0, 8),
+          );
+          const store = stores.find((location) => location.id === managerStoreId);
+          setStoreLabel(
+            store
+              ? `${store.storeName} — ${store.city}, ${store.state}`
+              : managerStoreId,
+          );
+        } catch (inventoryError) {
+          console.error("Unable to load manager inventory snapshot.", inventoryError);
+          setInventoryRows([]);
+          setStoreLabel(managerStoreId);
+        }
       }
     } catch (requestError) {
       console.error("Unable to load analytics.", requestError);
