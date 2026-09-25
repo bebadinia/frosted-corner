@@ -1,21 +1,9 @@
-# Backend
+# Frontend
 
-Developer 2 should scaffold one Spring Boot application in this directory.
+Developer 1 should scaffold the React/Vite application in this directory.
 
-Recommended initial dependencies:
+Recommended first milestone:
 
-- Spring Web
-- Spring Data MongoDB
-- Bean Validation
-- Spring Boot Test
+menu -> cart -> checkout -> order confirmation
 
-Runtime MongoDB configuration comes from environment variables:
-
-- `MONGODB_URI` for the MongoDB Atlas connection string
-- `MONGODB_DATABASE` for the Atlas database name
-
-Suggested base package:
-
-`com.frostedcorner`
-
-Do not create separate services for the business capabilities.
+Use the Spring Boot API as the authoritative source for product and order data.
