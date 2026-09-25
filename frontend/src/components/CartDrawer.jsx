@@ -590,7 +590,7 @@ export function CartDrawer() {
                           </span>
                         </span>
                       ) : (
-                        `${Number(quote.fulfillmentFee).toFixed(2)}`
+                        "$" + Number(quote.fulfillmentFee).toFixed(2)
                       )
                     ) : null}
                     {!isLoadingQuote && !quote ? "Complete fulfillment details" : null}
