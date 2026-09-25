@@ -42,6 +42,33 @@ class RecommendationServiceTest {
     }
 
     @Test
+    void ranksBirthdayCakeFirstForTheDemoPartyRequest() {
+        when(productRepository.findAllByActiveTrue()).thenReturn(List.of(
+                product("P004", "Vanilla Birthday Cake",
+                        "Vanilla celebration cake topped with buttercream and colorful sprinkles.",
+                        "31.99", "Cakes", true),
+                product("P006", "Vanilla Sprinkle Cupcake",
+                        "Vanilla cupcake topped with colorful sprinkles.",
+                        "3.99", "Cupcakes", true),
+                product("P001", "Classic Chocolate Cake",
+                        "Rich chocolate cake.", "32.99", "Cakes", true)));
+
+        List<AssistantRecommendation> recommendations = recommendationService.recommend(
+                new CustomerIntent(
+                        AssistantIntentType.RECOMMENDATION,
+                        "Birthday",
+                        null,
+                        10,
+                        null,
+                        null,
+                        false,
+                        List.of("dessert")));
+
+        assertThat(recommendations).extracting(AssistantRecommendation::productId)
+                .containsExactly("P004", "P006", "P001");
+    }
+
+    @Test
     void returnsChristmasRecommendationsFromActiveCatalogOnly() {
         when(productRepository.findAllByActiveTrue()).thenReturn(List.of(
                 product("P018", "Pumpkin Spice Cupcake", "Seasonal cupcake", "4.49", "Seasonal", true),
