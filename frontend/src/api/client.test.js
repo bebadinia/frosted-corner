@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   chatWithAssistant,
   createOrder,
-  getAnalyticsSummary, getNearestStore, getStores,
+  getAnalyticsSummary, getNearestStore, getProductAvailability, getStores,
   getCurrentUser,
   login,
   logout,
@@ -97,6 +97,27 @@ describe("createOrder", () => {
 
     await expect(createOrder({ items: [] }, "user1")).rejects.toThrow(
       "Insufficient inventory.",
+    );
+  });
+});
+
+describe("getProductAvailability", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("loads read-only inventory for the selected store", async () => {
+    const availability = [{ productId: "P001", quantity: 4, lowStockThreshold: 10 }];
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue(availability),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getProductAvailability("store24")).resolves.toEqual(availability);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/products/availability?storeId=store24",
+      { credentials: "include" },
     );
   });
 });
