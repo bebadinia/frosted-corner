@@ -1,10 +1,8 @@
 package com.frostedcorner.orders;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -22,7 +20,6 @@ class OrderDataSeederTest {
 
     @Test
     void seedsThreeOrdersForTheDemoCustomerAndManagerStore() throws Exception {
-        when(orderRepository.existsById(anyString())).thenReturn(false);
         OrderDataSeeder seeder = new OrderDataSeeder(orderRepository);
 
         seeder.run(new DefaultApplicationArguments());

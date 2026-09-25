@@ -20,4 +20,9 @@ public class OrderController {
     public Order createOrder(@Valid @RequestBody CreateOrderRequest request) {
         return orderService.createOrder(request);
     }
+
+    @PostMapping("/quote")
+    public OrderQuoteResponse quoteOrder(@Valid @RequestBody CreateOrderRequest request) {
+        return orderService.quoteOrder(request);
+    }
 }

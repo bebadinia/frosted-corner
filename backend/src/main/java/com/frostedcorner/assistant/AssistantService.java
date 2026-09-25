@@ -142,6 +142,9 @@ public class AssistantService {
             if (!keywordMatches.isEmpty() && intent.addAllReferencedRecommendations()) {
                 return keywordMatches;
             }
+            if (!keywordMatches.isEmpty()) {
+                return List.of(keywordMatches.getFirst());
+            }
         }
 
         if (intent.addAllReferencedRecommendations()) {
