@@ -37,6 +37,17 @@ export async function getProducts() {
   return response.json();
 }
 
+export async function getProductAvailability(storeId) {
+  const query = `?storeId=${encodeURIComponent(storeId)}`;
+  const response = await fetch(buildApiUrl(`/api/products/availability${query}`), sessionOptions());
+
+  if (!response.ok) {
+    throw new Error(`Product availability request failed with status ${response.status}.`);
+  }
+
+  return response.json();
+}
+
 export async function getAnalyticsSummary({ storeId } = {}) {
   const query = storeId === undefined
     ? ""
