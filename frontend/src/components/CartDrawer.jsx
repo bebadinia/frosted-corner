@@ -439,11 +439,9 @@ export function CartDrawer() {
                         maxLength="5"
                         name="takeoutSortLocation"
                         onChange={handleFieldChange}
-                        placeholder="97205"
                         type="text"
                         value={checkoutForm.takeoutSortLocation}
                       />
-                      <span className="text-xs font-normal text-muted-foreground">Use 97205 for the Portland demo.</span>
                     </label>
                     <label className="grid min-w-0 gap-1 text-sm font-medium text-foreground">
                       Pick up store
