@@ -223,6 +223,29 @@ Example response:
 ]
 ```
 
+### POST `/api/orders/quote`
+
+Calculates backend-owned fulfillment pricing before checkout without persisting an order or decrementing inventory.
+
+The request uses the same shape as `POST /api/orders`.
+
+Example response:
+
+```json
+{
+  "fulfillmentType": "SHIPPING",
+  "storeId": "store17",
+  "subtotal": 31.99,
+  "standardFulfillmentFee": 4.99,
+  "fulfillmentFee": 0.00,
+  "promotionSavings": 4.99,
+  "promotionApplied": true,
+  "estimatedTotal": 31.99
+}
+```
+
+React may display this quote before checkout, but the final order is still recalculated by Spring Boot.
+
 ### POST `/api/orders`
 
 Creates an order for a customer with delivery or takeout fulfillment.
@@ -267,8 +290,7 @@ Rules:
 - `fulfillmentOption=DELIVERY` requires `name`, `email`, `phone`, `street`, `city`, `state`, and `zipCode`
 - `fulfillmentOption=TAKEOUT` requires `name`, `email`, `phone`, and a selected `storeId`
 - Spring Boot resolves delivery to `LOCAL_DELIVERY` when the nearest store is within 25 miles, otherwise `SHIPPING`
-- Spring Boot assigns the authoritative fee: `LOCAL_DELIVERY=2.99`, `SHIPPING=4.99`, `TAKEOUT=0.00`
-- For `LOCAL_DELIVERY`, Spring Boot simulates a provider as `DoorDash` or `Uber Eats`
+- Spring Boot assigns the authoritative standard fee: `LOCAL_DELIVERY=2.99`, `SHIPPING=4.99`, `TAKEOUT=0.00`\n- Delivery orders with a backend subtotal greater than `25.00` have their fulfillment fee waived\n- At exactly `25.00`, the standard fulfillment fee still applies\n- For `LOCAL_DELIVERY`, Spring Boot simulates a provider as `DoorDash` or `Uber Eats`
 
 Example response:
 
