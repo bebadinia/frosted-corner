@@ -133,6 +133,43 @@ Example response:
 }
 ```
 
+### GET `/api/customers/{customerId}/orders`
+
+Returns the authenticated customer's persisted orders plus the three most-ordered products calculated from that order history.
+
+Example response:
+
+```json
+{
+  "orders": [
+    {
+      "id": "demo-order-003",
+      "customerId": "c1",
+      "storeId": "store1",
+      "status": "CONFIRMED",
+      "total": 22.45,
+      "items": [
+        {
+          "productId": "P005",
+          "productName": "Chocolate Fudge Cupcake",
+          "quantity": 3,
+          "lineTotal": 13.47
+        }
+      ]
+    }
+  ],
+  "favoriteItems": [
+    {
+      "productId": "P005",
+      "productName": "Chocolate Fudge Cupcake",
+      "quantityOrdered": 9
+    }
+  ]
+}
+```
+
+Favorite-item totals are calculated in Spring Boot from persisted orders. React only displays the result.
+
 ### PUT `/api/customers/{customerId}`
 
 Updates a customer's profile and preferences.

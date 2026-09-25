@@ -2,8 +2,8 @@ package com.frostedcorner.customers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -18,15 +18,21 @@ class CustomerDataSeederTest {
     private CustomerRepository customerRepository;
 
     @Test
-    void seedsTheCustomerProfileLinkedToTheDemoCustomerUser() throws Exception {
-        when(customerRepository.existsById("c1")).thenReturn(false);
+    void seedsCompleteDemoCustomerProfile() throws Exception {
         CustomerDataSeeder seeder = new CustomerDataSeeder(customerRepository);
 
         seeder.run(new DefaultApplicationArguments());
 
         ArgumentCaptor<Customer> customer = ArgumentCaptor.forClass(Customer.class);
         verify(customerRepository).save(customer.capture());
-        assertEquals("c1", customer.getValue().getId());
-        assertEquals("customer@frostedcorner.demo", customer.getValue().getEmail());
+
+        Customer saved = customer.getValue();
+        assertEquals("c1", saved.getId());
+        assertEquals("Alex Carter", saved.getName());
+        assertEquals("customer@frostedcorner.demo", saved.getEmail());
+        assertEquals("555-0100", saved.getPhone());
+        assertEquals("10001", saved.getZipCode());
+        assertEquals(List.of("chocolate", "celebrations"), saved.getPreferences());
+        assertEquals(List.of("Cupcakes", "Cookies"), saved.getFavoriteCategories());
     }
 }

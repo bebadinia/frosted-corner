@@ -41,6 +41,7 @@ public class SecurityConfig {
                                 "/api/products/**", "/api/assistant/**", "/api/orders").permitAll()
                         .requestMatchers("/api/analytics/**").hasAnyRole("MANAGER", "OWNER")
                         .requestMatchers("/api/inventory/**").hasAnyRole("EMPLOYEE", "MANAGER")
+                        .requestMatchers("/api/customers/**").hasRole("CUSTOMER")
                         .requestMatchers("/api/auth/me").authenticated()
                         .anyRequest().permitAll())
                 .formLogin(form -> form.disable())

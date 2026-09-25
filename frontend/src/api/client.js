@@ -61,6 +61,32 @@ export async function getAnalyticsSummary({ storeId } = {}) {
   return response.json();
 }
 
+export async function getCustomerProfile(customerId) {
+  const response = await fetch(
+    buildApiUrl(`/api/customers/${encodeURIComponent(customerId)}`),
+    sessionOptions(),
+  );
+
+  if (!response.ok) {
+    throw new Error(await readError(response, "Unable to load your profile."));
+  }
+
+  return response.json();
+}
+
+export async function getCustomerOrderHistory(customerId) {
+  const response = await fetch(
+    buildApiUrl(`/api/customers/${encodeURIComponent(customerId)}/orders`),
+    sessionOptions(),
+  );
+
+  if (!response.ok) {
+    throw new Error(await readError(response, "Unable to load your order history."));
+  }
+
+  return response.json();
+}
+
 export async function createOrder(order) {
   const response = await fetch(buildApiUrl("/api/orders"), sessionOptions({
     method: "POST",

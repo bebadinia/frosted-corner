@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   chatWithAssistant,
   createOrder,
-  getAnalyticsSummary, getNearestStore, getProductAvailability, getStores,
+  getAnalyticsSummary, getCustomerOrderHistory, getCustomerProfile,
+  getNearestStore, getProductAvailability, getStores,
   getCurrentUser,
   login,
   logout,
@@ -50,6 +51,42 @@ describe("getAnalyticsSummary", () => {
 
     await expect(getAnalyticsSummary()).rejects.toThrow(
       "Analytics request failed with status 503.",
+    );
+  });
+});
+
+describe("customer account requests", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("loads the signed-in customer's profile with session credentials", async () => {
+    const profile = { id: "c1", name: "Alex Carter" };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue(profile),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getCustomerProfile("c1")).resolves.toEqual(profile);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/customers/c1",
+      { credentials: "include" },
+    );
+  });
+
+  it("loads order history for the linked customer", async () => {
+    const history = { orders: [{ id: "demo-order-001" }], favoriteItems: [] };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue(history),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getCustomerOrderHistory("c1")).resolves.toEqual(history);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/customers/c1/orders",
+      { credentials: "include" },
     );
   });
 });
