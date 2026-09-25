@@ -121,6 +121,10 @@ describe("CartDrawer", () => {
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Alex Carter" } });
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "alex@example.com" } });
     fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "555-0100" } });
+    fireEvent.change(screen.getByLabelText("Street"), { target: { value: "2490 Burnside Street" } });
+    fireEvent.change(screen.getByLabelText("City"), { target: { value: "Portland" } });
+    fireEvent.change(screen.getByLabelText("State"), { target: { value: "OR" } });
+    fireEvent.change(screen.getByLabelText("ZIP code"), { target: { value: "97205" } });
     fireEvent.click(screen.getByRole("button", { name: "PLACE ORDER" }));
 
     expect(screen.getByRole("button", { name: "PLACING ORDER..." })).toBeDisabled();
