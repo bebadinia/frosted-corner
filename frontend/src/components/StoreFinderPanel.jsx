@@ -42,7 +42,7 @@ export function StoreFinderPanel() {
         <div>
           <h2 id="store-finder-heading" className="font-serif text-2xl font-bold">Find the nearest Frosted Corner</h2>
           <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            Enter your ZIP code to compare nearby stores. Use 97205 for the Portland demo.
+            Enter your ZIP code to compare nearby stores.
           </p>
         </div>
       </div>
@@ -56,7 +56,6 @@ export function StoreFinderPanel() {
             inputMode="numeric"
             maxLength="5"
             onChange={(event) => setZipCode(event.target.value)}
-            placeholder="97205"
             type="text"
             value={zipCode}
           />
