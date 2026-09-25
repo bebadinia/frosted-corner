@@ -7,6 +7,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { AccessibilityBar } from "./components/AccessibilityBar";
+import { AboutUsPage } from "./pages/AboutUsPage";
 import { CartDrawer } from "./components/CartDrawer";
 import { AccessibilityProvider } from "./context/AccessibilityContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -105,10 +106,13 @@ function Layout() {
           </Link>
           <nav className="hidden items-center gap-8 text-[13px] font-bold tracking-wider lg:flex">
             <Link className="transition-colors hover:text-primary" to="/order">
-              ORDER ONLINE
+              ORDER
             </Link>
             <Link className="transition-colors hover:text-primary" to="/subscriptions">
               SUBSCRIPTIONS
+            </Link>
+            <Link className="transition-colors hover:text-primary" to="/about">
+              ABOUT US
             </Link>
           </nav>
 
@@ -153,6 +157,7 @@ const router = createBrowserRouter([
       { path: "signup", element: <SignupPage /> },
       { path: "order", element: <OrderPage /> },
       { path: "subscriptions", element: <SubscriptionsPage /> },
+      { path: "about", element: <AboutUsPage /> },
       { path: "franchise", element: <FranchisePage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
