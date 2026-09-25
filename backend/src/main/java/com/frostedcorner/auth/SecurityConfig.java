@@ -38,7 +38,7 @@ public class SecurityConfig {
                     .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/logout", "/api/health",
-                                "/api/products/**", "/api/assistant/**", "/api/orders").permitAll()
+                                "/api/products/**", "/api/assistant/**", "/api/orders/**").permitAll()
                         .requestMatchers("/api/analytics/**").hasAnyRole("MANAGER", "OWNER")
                         .requestMatchers("/api/inventory/**").hasAnyRole("EMPLOYEE", "MANAGER")
                         .requestMatchers("/api/customers/**").hasRole("CUSTOMER")
