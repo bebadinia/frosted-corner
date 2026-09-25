@@ -170,6 +170,16 @@ Example response:
 
 Favorite-item totals are calculated in Spring Boot from persisted orders. React only displays the result.
 
+### GET `/api/customers/{customerId}/recommendations`
+
+Returns up to three active catalog products that the authenticated customer has ordered most often.
+
+Rules:
+- recommendations are derived from persisted customer orders
+- only active products from the backend catalog are returned
+- React does not rank or invent recommendations
+- customers may access only their own recommendation data
+
 ### PUT `/api/customers/{customerId}`
 
 Updates a customer's profile and preferences.

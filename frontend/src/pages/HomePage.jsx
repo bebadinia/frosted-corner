@@ -5,6 +5,9 @@ import { StoreFinderPanel } from "../components/StoreFinderPanel";
 export function HomePage() {
   return (
     <>
+      <div className="bg-primary px-4 py-3 text-center text-sm font-bold tracking-wide text-white">
+        If your order is over $25, you get free shipping.
+      </div>
       <section className="relative flex min-h-[600px] items-center justify-center overflow-hidden lg:min-h-[700px]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#f9d9c0_0%,#f3b485_30%,#6d2b11_100%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(45,24,15,0.18),rgba(45,24,15,0.6))]" />

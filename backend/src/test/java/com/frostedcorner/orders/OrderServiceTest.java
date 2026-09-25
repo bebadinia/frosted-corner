@@ -92,9 +92,9 @@ class OrderServiceTest {
         assertEquals("CONFIRMED", result.getStatus());
         assertEquals("store24", result.getStoreId());
         assertEquals("LOCAL_DELIVERY", result.getFulfillmentType());
-        assertEquals(new BigDecimal("2.99"), result.getFulfillmentFee());
+        assertEquals(new BigDecimal("0.00"), result.getFulfillmentFee());
         assertEquals("DoorDash", result.getFulfillmentProvider());
-        assertEquals(new BigDecimal("82.44"), result.getTotal());
+        assertEquals(new BigDecimal("79.45"), result.getTotal());
         assertEquals(new BigDecimal("65.98"), result.getItems().get(0).getLineTotal());
         assertEquals(new BigDecimal("13.47"), result.getItems().get(1).getLineTotal());
         assertEquals(cake.getPrice(), result.getItems().get(0).getUnitPrice());
@@ -120,10 +120,28 @@ class OrderServiceTest {
 
         assertEquals("SHIPPING", result.getFulfillmentType());
         assertEquals("store17", result.getStoreId());
-        assertEquals(new BigDecimal("4.99"), result.getFulfillmentFee());
+        assertEquals(new BigDecimal("0.00"), result.getFulfillmentFee());
         assertNull(result.getFulfillmentProvider());
-        assertEquals(new BigDecimal("37.98"), result.getTotal());
+        assertEquals(new BigDecimal("32.99"), result.getTotal());
         verify(inventoryService).applyDeductions(deductions);
+    }
+
+    @Test
+    void keepsShippingFeeWhenSubtotalIsExactlyTwentyFiveDollars() {
+        Product product = product("P001", "Dessert Box", "25.00", true);
+        when(productRepository.findById("P001")).thenReturn(Optional.of(product));
+        when(franchiseLocationService.rankStoresByDistance("2490 Burnside Street, Portland, OR 97205"))
+                .thenReturn(rankedStores("97205", nearestStore("store17", 25.01)));
+        when(inventoryService.validateAvailability("store17", Map.of("P001", 1)))
+                .thenReturn(List.of(new InventoryDeduction(
+                        new Inventory("inv1", "store17", "P001", 20, 10), 1)));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Order result = orderService.createOrder(deliveryRequest(List.of(
+                new CreateOrderItemRequest("P001", 1))));
+
+        assertEquals(new BigDecimal("4.99"), result.getFulfillmentFee());
+        assertEquals(new BigDecimal("29.99"), result.getTotal());
     }
 
     @Test
