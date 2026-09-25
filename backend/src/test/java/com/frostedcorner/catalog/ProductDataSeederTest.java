@@ -31,7 +31,7 @@ class ProductDataSeederTest {
         ArgumentCaptor<List<Product>> productsCaptor = ArgumentCaptor.forClass(List.class);
         verify(productRepository).saveAll(productsCaptor.capture());
         assertThat(productsCaptor.getValue())
-            .hasSize(20)
+            .hasSize(23)
                 .extracting(Product::getId)
                 .doesNotHaveDuplicates();
         assertThat(productsCaptor.getValue())
