@@ -20,7 +20,9 @@ describe("HomePage", () => {
     );
 
     expect(
-      screen.getByText("If your order is over $25, you get free shipping."),
+      screen.getByText("If your order is over $25, you get free shipping!"),
     ).toBeInTheDocument();
+    expect(screen.queryByText("MVP flow")).not.toBeInTheDocument();
+    expect(screen.queryByText("Customer-first storefront")).not.toBeInTheDocument();
   });
 });
