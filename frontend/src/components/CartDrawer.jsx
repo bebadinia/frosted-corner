@@ -5,8 +5,6 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 
 const guestCustomerId = import.meta.env.VITE_CUSTOMER_ID || "c1";
-const SIGNED_IN_DEMO_ZIP = "97205";
-
 function createInitialCheckoutForm() {
   return {
     fulfillmentOption: "DELIVERY",
@@ -54,9 +52,10 @@ export function CartDrawer() {
   const [storeOptions, setStoreOptions] = useState([]);
   const [storesError, setStoresError] = useState("");
   const [isLoadingStores, setIsLoadingStores] = useState(false);
-  const isSignedInCustomer = currentUser?.role === "CUSTOMER" && Boolean(currentUser.customerId);
-  const customerId = isSignedInCustomer ? currentUser.customerId : guestCustomerId;
-  const takeoutSortZip = isSignedInCustomer ? SIGNED_IN_DEMO_ZIP : checkoutForm.takeoutSortLocation.trim();
+  const customerId = currentUser?.role === "CUSTOMER" && currentUser.customerId
+    ? currentUser.customerId
+    : guestCustomerId;
+  const takeoutSortZip = checkoutForm.takeoutSortLocation.trim();
 
   const handleCloseCart = () => {
     closeCart();
@@ -436,27 +435,20 @@ export function CartDrawer() {
                   </div>
                 ) : (
                   <div className="mt-4 grid gap-3">
-                    {isSignedInCustomer ? (
-                      <div className="rounded border border-border bg-white px-3 py-2 text-sm">
-                        <div className="font-medium text-foreground">Nearby stores</div>
-                        <div className="mt-1 text-xs text-muted-foreground">Using your signed-in demo customer ZIP: {SIGNED_IN_DEMO_ZIP}</div>
-                      </div>
-                    ) : (
-                      <label className="grid min-w-0 gap-1 text-sm font-medium text-foreground">
-                        ZIP code for nearby stores
-                        <input
-                          className="w-full min-w-0 rounded border border-border px-3 py-2"
-                          inputMode="numeric"
-                          maxLength="5"
-                          name="takeoutSortLocation"
-                          onChange={handleFieldChange}
-                          placeholder="97205"
-                          type="text"
-                          value={checkoutForm.takeoutSortLocation}
-                        />
-                        <span className="text-xs font-normal text-muted-foreground">Use 97205 for the Portland demo.</span>
-                      </label>
-                    )}
+                    <label className="grid min-w-0 gap-1 text-sm font-medium text-foreground">
+                      ZIP code for nearby stores
+                      <input
+                        className="w-full min-w-0 rounded border border-border px-3 py-2"
+                        inputMode="numeric"
+                        maxLength="5"
+                        name="takeoutSortLocation"
+                        onChange={handleFieldChange}
+                        placeholder="97205"
+                        type="text"
+                        value={checkoutForm.takeoutSortLocation}
+                      />
+                      <span className="text-xs font-normal text-muted-foreground">Use 97205 for the Portland demo.</span>
+                    </label>
                     <label className="grid min-w-0 gap-1 text-sm font-medium text-foreground">
                       Pick up store
                       <select
