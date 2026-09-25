@@ -6,6 +6,7 @@ import {
   getNearestStore,
   getProductImageUrl,
   getStores,
+  quoteOrder,
 } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -24,6 +25,53 @@ function createInitialCheckoutForm() {
     takeoutSortLocation: "",
     storeId: "",
   };
+}
+
+function buildOrderRequest(checkoutForm, items, customerId) {
+  const isTakeout = checkoutForm.fulfillmentOption === "TAKEOUT";
+
+  return {
+    customerId,
+    fulfillmentOption: checkoutForm.fulfillmentOption,
+    ...(isTakeout ? { storeId: checkoutForm.storeId } : {}),
+    customer: {
+      name: checkoutForm.name,
+      email: checkoutForm.email,
+      phone: checkoutForm.phone,
+      ...(isTakeout
+        ? {}
+        : {
+            street: checkoutForm.street,
+            city: checkoutForm.city,
+            state: checkoutForm.state,
+            zipCode: checkoutForm.zipCode,
+          }),
+    },
+    items: items.map(({ product, quantity }) => ({
+      productId: product.id,
+      quantity,
+    })),
+  };
+}
+
+function isQuoteReady(checkoutForm, items) {
+  if (items.length === 0
+      || !checkoutForm.name.trim()
+      || !checkoutForm.email.trim()
+      || !checkoutForm.phone.trim()) {
+    return false;
+  }
+
+  if (checkoutForm.fulfillmentOption === "TAKEOUT") {
+    return Boolean(checkoutForm.storeId);
+  }
+
+  return Boolean(
+    checkoutForm.street.trim()
+      && checkoutForm.city.trim()
+      && checkoutForm.state.trim()
+      && /^\d{5}$/.test(checkoutForm.zipCode.trim()),
+  );
 }
 
 function formatFulfillmentLabel(order) {
@@ -58,6 +106,9 @@ export function CartDrawer() {
   const [storeOptions, setStoreOptions] = useState([]);
   const [storesError, setStoresError] = useState("");
   const [isLoadingStores, setIsLoadingStores] = useState(false);
+  const [quote, setQuote] = useState(null);
+  const [isLoadingQuote, setIsLoadingQuote] = useState(false);
+  const [quoteError, setQuoteError] = useState("");
   const customerId = currentUser?.role === "CUSTOMER" && currentUser.customerId
     ? currentUser.customerId
     : guestCustomerId;
@@ -193,6 +244,44 @@ export function CartDrawer() {
     };
   }, [baseStores, isOpen, takeoutSortZip]);
 
+  useEffect(() => {
+    if (!isOpen || !isQuoteReady(checkoutForm, items)) {
+      setQuote(null);
+      setQuoteError("");
+      return undefined;
+    }
+
+    let isCurrent = true;
+    setIsLoadingQuote(true);
+    setQuoteError("");
+
+    quoteOrder(buildOrderRequest(checkoutForm, items, customerId))
+      .then((result) => {
+        if (isCurrent) {
+          setQuote(result);
+        }
+      })
+      .catch((requestError) => {
+        if (isCurrent) {
+          setQuote(null);
+          setQuoteError(
+            requestError instanceof Error
+              ? requestError.message
+              : "Unable to calculate shipping or delivery fees yet.",
+          );
+        }
+      })
+      .finally(() => {
+        if (isCurrent) {
+          setIsLoadingQuote(false);
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [checkoutForm, customerId, isOpen, items]);
+
   const handleFieldChange = (event) => {
     const { name, value } = event.target;
     setCheckoutForm((currentForm) => ({
@@ -210,30 +299,8 @@ export function CartDrawer() {
     setCheckoutError("");
 
     try {
-      const isTakeout = checkoutForm.fulfillmentOption === "TAKEOUT";
       const order = await createOrder(
-        {
-          customerId,
-          fulfillmentOption: checkoutForm.fulfillmentOption,
-          ...(isTakeout ? { storeId: checkoutForm.storeId } : {}),
-          customer: {
-            name: checkoutForm.name,
-            email: checkoutForm.email,
-            phone: checkoutForm.phone,
-            ...(isTakeout
-              ? {}
-              : {
-                  street: checkoutForm.street,
-                  city: checkoutForm.city,
-                  state: checkoutForm.state,
-                  zipCode: checkoutForm.zipCode,
-                }),
-          },
-          items: items.map(({ product, quantity }) => ({
-            productId: product.id,
-            quantity,
-          })),
-        },
+        buildOrderRequest(checkoutForm, items, customerId),
       );
 
       setConfirmedOrder(order);
@@ -351,10 +418,6 @@ export function CartDrawer() {
             </div>
           ) : (
             <div className="mt-6 border-t border-border pt-6">
-              <div className="mb-4 flex items-center justify-between text-lg font-bold">
-                <span>Subtotal</span>
-                <span>${totalPrice.toFixed(2)}</span>
-              </div>
               <div className="mb-4 min-w-0 rounded border border-border bg-background p-4 text-sm">
                 <div className="font-bold text-foreground">Fulfillment</div>
                 <p className="mt-1 break-words text-muted-foreground">
@@ -508,6 +571,43 @@ export function CartDrawer() {
                   </div>
                 )}
               </div>
+              <div className="mb-4 rounded border border-border bg-white p-4 text-sm">
+                <div className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-primary">Order summary</div>
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-muted-foreground">Subtotal</span>
+                  <span className="font-semibold text-foreground">${totalPrice.toFixed(2)}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="font-medium text-muted-foreground">Delivery / shipping fee</span>
+                  <span className="text-right font-semibold text-foreground">
+                    {isLoadingQuote ? "Calculating…" : null}
+                    {!isLoadingQuote && quote ? (
+                      quote.promotionApplied ? (
+                        <span>
+                          FREE
+                          <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+                            Promotion applied
+                          </span>
+                        </span>
+                      ) : (
+                        "$" + Number(quote.fulfillmentFee).toFixed(2)
+                      )
+                    ) : null}
+                    {!isLoadingQuote && !quote ? "Complete fulfillment details" : null}
+                  </span>
+                </div>
+                {quote ? (
+                  <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-base font-bold">
+                    <span>Estimated total</span>
+                    <span>${Number(quote.total).toFixed(2)}</span>
+                  </div>
+                ) : null}
+              </div>
+              {quoteError ? (
+                <p className="mb-4 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800" role="status">
+                  {quoteError}
+                </p>
+              ) : null}
               {checkoutError ? (
                 <p className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
                   {checkoutError}

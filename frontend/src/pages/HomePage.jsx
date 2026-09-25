@@ -6,7 +6,7 @@ export function HomePage() {
   return (
     <>
       <div className="bg-primary px-4 py-3 text-center text-sm font-bold tracking-wide text-white">
-        If your order is over $25, you get free shipping.
+        If your order is over $25, you get free shipping!
       </div>
       <section className="relative flex min-h-[600px] items-center justify-center overflow-hidden lg:min-h-[700px]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#f9d9c0_0%,#f3b485_30%,#6d2b11_100%)]" />
@@ -30,25 +30,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto grid w-full max-w-7xl gap-6 px-6 py-16 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="rounded-2xl border border-border bg-white p-8 shadow-sm">
-          <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-primary">MVP flow</div>
-          <h2 className="font-serif text-3xl font-bold">Customer-first storefront</h2>
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground">
-            Browse active products from the backend catalog, build a cart in React, and use the guided
-            ordering panel to quickly match desserts by name or category. The UI is mapped from the attached
-            design while keeping pricing and product truth in Spring Boot.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link className="rounded bg-primary px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-accent" to="/order">
-              Shop the catalog
-            </Link>
-            <Link className="rounded border border-border px-5 py-3 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary" to="/subscriptions">
-              View dessert plans
-            </Link>
-          </div>
-        </div>
-
+      <section className="mx-auto grid w-full max-w-7xl gap-6 px-6 py-16 lg:grid-cols-2">
         <div className="rounded-2xl border border-border bg-white p-8 shadow-sm">
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-primary">System status</div>
           <h2 className="font-serif text-2xl font-bold">Backend connectivity</h2>

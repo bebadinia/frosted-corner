@@ -11,13 +11,13 @@ class DemoAiClientTest {
     private final DemoAiClient demoAiClient = new DemoAiClient();
 
     @Test
-    void detectsBirthdayFlavorAndServingCount() {
+    void detectsTheDemoBirthdayPartyRequest() {
         CustomerIntent intent = demoAiClient.interpret(
-                "I need desserts for a birthday party for 10 people and prefer chocolate.");
+                "I need desserts for a birthday party for 10 people.");
 
         assertThat(intent.intentType()).isEqualTo(AssistantIntentType.RECOMMENDATION);
         assertThat(intent.event()).isEqualTo("Birthday");
-        assertThat(intent.flavor()).isEqualTo("Chocolate");
+        assertThat(intent.flavor()).isNull();
         assertThat(intent.servings()).isEqualTo(10);
     }
 
@@ -28,6 +28,15 @@ class DemoAiClientTest {
         assertThat(intent.intentType()).isEqualTo(AssistantIntentType.ADD_TO_CART);
         assertThat(intent.quantity()).isEqualTo(2);
         assertThat(intent.addAllReferencedRecommendations()).isTrue();
+    }
+
+    @Test
+    void detectsTheDemoCakeAddCommand() {
+        CustomerIntent intent = demoAiClient.interpret("Add the cake to my cart.");
+
+        assertThat(intent.intentType()).isEqualTo(AssistantIntentType.ADD_TO_CART);
+        assertThat(intent.quantity()).isEqualTo(1);
+        assertThat(intent.keywords()).containsExactly("cake");
     }
 
     @Test

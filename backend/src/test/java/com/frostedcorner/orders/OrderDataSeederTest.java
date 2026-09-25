@@ -1,10 +1,7 @@
 package com.frostedcorner.orders;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -22,15 +19,15 @@ class OrderDataSeederTest {
 
     @Test
     void seedsThreeOrdersForTheDemoCustomerAndManagerStore() throws Exception {
-        when(orderRepository.existsById(anyString())).thenReturn(false);
         OrderDataSeeder seeder = new OrderDataSeeder(orderRepository);
 
         seeder.run(new DefaultApplicationArguments());
 
-        ArgumentCaptor<Order> orders = ArgumentCaptor.forClass(Order.class);
-        verify(orderRepository, times(3)).save(orders.capture());
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Order>> orders = ArgumentCaptor.forClass(List.class);
+        verify(orderRepository).saveAll(orders.capture());
 
-        List<Order> savedOrders = orders.getAllValues();
+        List<Order> savedOrders = orders.getValue();
         assertEquals(3, savedOrders.size());
         assertEquals(1, savedOrders.stream().map(Order::getCustomerId).distinct().count());
         assertEquals("c1", savedOrders.getFirst().getCustomerId());

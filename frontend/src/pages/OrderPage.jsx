@@ -29,6 +29,8 @@ export function OrderPage() {
   const { addItem } = useCart();
   const [products, setProducts] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+  const [recommendationsError, setRecommendationsError] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedInventoryZip, setSelectedInventoryZip] = useState(INVENTORY_LOCATIONS[0].zip);
@@ -106,10 +108,14 @@ export function OrderPage() {
   useEffect(() => {
     if (currentUser?.role !== "CUSTOMER" || !currentUser.customerId) {
       setRecommendations([]);
+      setRecommendationsLoading(false);
+      setRecommendationsError("");
       return undefined;
     }
 
     let isCurrent = true;
+    setRecommendationsLoading(true);
+    setRecommendationsError("");
 
     getCustomerRecommendations(currentUser.customerId)
       .then((suggestedProducts) => {
@@ -126,6 +132,12 @@ export function OrderPage() {
 
         console.error("Unable to load personalized suggestions.", requestError);
         setRecommendations([]);
+        setRecommendationsError("Unable to load your suggestions right now.");
+      })
+      .finally(() => {
+        if (isCurrent) {
+          setRecommendationsLoading(false);
+        }
       });
 
     return () => {
@@ -181,7 +193,7 @@ export function OrderPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-6 py-12">
-      {currentUser?.role === "CUSTOMER" && recommendations.length > 0 ? (
+      {currentUser?.role === "CUSTOMER" ? (
         <section className="mb-8 rounded-2xl border border-primary/20 bg-secondary/40 p-6">
           <div className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
             Picked for you
@@ -190,36 +202,49 @@ export function OrderPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             These are active products you have ordered most often.
           </p>
-          <div className="mt-5 grid gap-4 md:grid-cols-3">
-            {recommendations.map((product) => {
-              const stock = availabilityByProductId[product.id];
-              const soldOut = stock ? stock.quantity <= 0 : false;
+          {recommendationsLoading ? (
+            <p className="mt-5 text-sm font-medium text-muted-foreground">Loading your suggestions…</p>
+          ) : null}
+          {recommendationsError ? (
+            <p className="mt-5 text-sm font-medium text-red-700" role="alert">{recommendationsError}</p>
+          ) : null}
+          {!recommendationsLoading && !recommendationsError && recommendations.length === 0 ? (
+            <p className="mt-5 text-sm font-medium text-muted-foreground">
+              No previous active items are available to recommend yet.
+            </p>
+          ) : null}
+          {recommendations.length > 0 ? (
+            <div className="mt-5 grid gap-4 md:grid-cols-3">
+              {recommendations.map((product) => {
+                const stock = availabilityByProductId[product.id];
+                const soldOut = stock ? stock.quantity <= 0 : false;
 
-              return (
-                <article key={product.id} className="flex items-center gap-4 rounded-xl border border-border bg-white p-4">
-                  <img
-                    alt={product.name}
-                    className="h-16 w-16 rounded bg-muted object-cover"
-                    src={getProductImageUrl(product.imageFileName)}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-serif text-lg font-bold">{product.name}</h3>
-                    <p className="mt-1 text-sm font-semibold text-primary">
-                      ${Number(product.price).toFixed(2)}
-                    </p>
-                    <button
-                      className="mt-2 text-xs font-bold uppercase tracking-wider text-primary hover:text-accent disabled:cursor-not-allowed disabled:text-muted-foreground"
-                      disabled={soldOut}
-                      onClick={() => addItem(product)}
-                      type="button"
-                    >
-                      {soldOut ? "Sold out" : "Add to cart"}
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                return (
+                  <article key={product.id} className="flex items-center gap-4 rounded-xl border border-border bg-white p-4">
+                    <img
+                      alt={product.name}
+                      className="h-16 w-16 rounded bg-muted object-cover"
+                      src={getProductImageUrl(product.imageFileName)}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-serif text-lg font-bold">{product.name}</h3>
+                      <p className="mt-1 text-sm font-semibold text-primary">
+                        ${Number(product.price).toFixed(2)}
+                      </p>
+                      <button
+                        className="mt-2 text-xs font-bold uppercase tracking-wider text-primary hover:text-accent disabled:cursor-not-allowed disabled:text-muted-foreground"
+                        disabled={soldOut}
+                        onClick={() => addItem(product)}
+                        type="button"
+                      >
+                        {soldOut ? "Sold out" : "Add to cart"}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : null}
         </section>
       ) : null}
 

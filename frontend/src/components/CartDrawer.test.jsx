@@ -7,11 +7,12 @@ const { authState } = vi.hoisted(() => ({
   authState: { currentUser: null },
 }));
 
-const { createOrder, getCustomerProfile, getNearestStore, getStores } = vi.hoisted(() => ({
+const { createOrder, getCustomerProfile, getNearestStore, getStores, quoteOrder } = vi.hoisted(() => ({
   createOrder: vi.fn(),
   getCustomerProfile: vi.fn(),
   getNearestStore: vi.fn(),
   getStores: vi.fn(),
+  quoteOrder: vi.fn(),
 }));
 
 vi.mock("../context/AuthContext", () => ({
@@ -24,6 +25,7 @@ vi.mock("../api/client", () => ({
   getNearestStore,
   getProductImageUrl: (imageFileName) => `/images/products/${imageFileName}`,
   getStores,
+  quoteOrder,
 }));
 
 const cupcake = {
@@ -68,6 +70,7 @@ describe("CartDrawer", () => {
     getCustomerProfile.mockReset();
     getNearestStore.mockReset();
     getStores.mockReset();
+    quoteOrder.mockReset();
     getCustomerProfile.mockResolvedValue({
       id: "c1",
       name: "Alex Carter",
@@ -92,6 +95,13 @@ describe("CartDrawer", () => {
         state: "OR",
       },
     ]);
+    quoteOrder.mockResolvedValue({
+      subtotal: 4.5,
+      fulfillmentFee: 2.99,
+      total: 7.49,
+      fulfillmentType: "LOCAL_DELIVERY",
+      promotionApplied: false,
+    });
     getNearestStore.mockResolvedValue({
       nearestStore: { id: "store24" },
       stores: [
@@ -120,6 +130,35 @@ describe("CartDrawer", () => {
 
     expect(screen.queryByText("Lemon Tart")).not.toBeInTheDocument();
     expect(screen.getByText("$9.00")).toBeInTheDocument();
+  });
+
+  it("shows the backend fee quote and promotion before placing the order", async () => {
+    quoteOrder.mockResolvedValue({
+      subtotal: 31.99,
+      fulfillmentFee: 0,
+      total: 31.99,
+      fulfillmentType: "LOCAL_DELIVERY",
+      promotionApplied: true,
+    });
+    renderCart();
+
+    fireEvent.click(screen.getByRole("button", { name: "Add cupcake" }));
+    for (let index = 0; index < 6; index += 1) {
+      fireEvent.click(screen.getByRole("button", { name: "Increase quantity of Chocolate Cupcake" }));
+    }
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Guest Customer" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "guest@example.com" } });
+    fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "555-0110" } });
+    fireEvent.change(screen.getByLabelText("Street"), { target: { value: "101 Broadway" } });
+    fireEvent.change(screen.getByLabelText("City"), { target: { value: "New York" } });
+    fireEvent.change(screen.getByLabelText("State"), { target: { value: "NY" } });
+    fireEvent.change(screen.getByLabelText("ZIP code"), { target: { value: "10001" } });
+
+    await waitFor(() => expect(quoteOrder).toHaveBeenCalled());
+    expect(screen.getByText("Delivery / shipping fee")).toBeInTheDocument();
+    expect(screen.getByText("FREE")).toBeInTheDocument();
+    expect(screen.getByText("Promotion applied")).toBeInTheDocument();
+    expect(screen.getByText("$31.99")).toBeInTheDocument();
   });
 
   it("submits product IDs and quantities and displays the backend confirmation total", async () => {

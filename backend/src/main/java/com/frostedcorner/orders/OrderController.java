@@ -16,6 +16,11 @@ public class OrderController {
         this.orderService = orderService;
     }
 
+    @PostMapping("/quote")
+    public OrderQuoteResponse quoteOrder(@Valid @RequestBody CreateOrderRequest request) {
+        return orderService.quoteOrder(request);
+    }
+
     @PostMapping
     public Order createOrder(@Valid @RequestBody CreateOrderRequest request) {
         return orderService.createOrder(request);

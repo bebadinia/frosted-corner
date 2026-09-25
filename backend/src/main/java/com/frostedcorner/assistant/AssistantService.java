@@ -142,6 +142,11 @@ public class AssistantService {
             if (!keywordMatches.isEmpty() && intent.addAllReferencedRecommendations()) {
                 return keywordMatches;
             }
+            if (!keywordMatches.isEmpty()
+                    && intent.keywords().size() == 1
+                    && "cake".equals(intent.keywords().getFirst())) {
+                return List.of(keywordMatches.getFirst());
+            }
         }
 
         if (intent.addAllReferencedRecommendations()) {
@@ -157,7 +162,17 @@ public class AssistantService {
                         Objects.toString(product.getDescription(), ""),
                         Objects.toString(product.getCategory(), ""))
                 .toLowerCase(Locale.US);
-        return keywords.stream().anyMatch(searchable::contains);
+        return keywords.stream().anyMatch(keyword -> matchesKeyword(product, searchable, keyword));
+    }
+
+    private boolean matchesKeyword(Product product, String searchable, String keyword) {
+        if ("cake".equals(keyword)) {
+            String category = Objects.toString(product.getCategory(), "");
+            String name = Objects.toString(product.getName(), "").toLowerCase(Locale.US);
+            return "cakes".equalsIgnoreCase(category)
+                    || name.matches(".*\\bcake\\b.*");
+        }
+        return searchable.contains(keyword);
     }
 
     private AssistantOffer buildOffer(CustomerIntent intent) {
