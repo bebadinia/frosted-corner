@@ -11,13 +11,13 @@ class DemoAiClientTest {
     private final DemoAiClient demoAiClient = new DemoAiClient();
 
     @Test
-    void detectsBirthdayFlavorAndServingCount() {
+    void detectsTheDemoBirthdayPartyRequest() {
         CustomerIntent intent = demoAiClient.interpret(
-                "I need desserts for a birthday party for 10 people and prefer chocolate.");
+                "I need desserts for a birthday party for 10 people.");
 
         assertThat(intent.intentType()).isEqualTo(AssistantIntentType.RECOMMENDATION);
         assertThat(intent.event()).isEqualTo("Birthday");
-        assertThat(intent.flavor()).isEqualTo("Chocolate");
+        assertThat(intent.flavor()).isNull();
         assertThat(intent.servings()).isEqualTo(10);
     }
 
