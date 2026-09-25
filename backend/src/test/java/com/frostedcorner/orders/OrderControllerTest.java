@@ -30,6 +30,44 @@ class OrderControllerTest {
     private OrderService orderService;
 
     @Test
+    void returnsBackendCheckoutQuoteBeforeOrderCreation() throws Exception {
+        when(orderService.quoteOrder(any(CreateOrderRequest.class)))
+                .thenReturn(new OrderQuoteResponse(
+                        new BigDecimal("31.99"),
+                        new BigDecimal("0.00"),
+                        new BigDecimal("31.99"),
+                        "LOCAL_DELIVERY",
+                        true));
+
+        mockMvc.perform(post("/api/orders/quote")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "customerId": "c1",
+                                  "fulfillmentOption": "DELIVERY",
+                                  "customer": {
+                                    "name": "Alex Carter",
+                                    "email": "alex@example.com",
+                                    "phone": "555-0100",
+                                    "street": "101 Broadway",
+                                    "city": "New York",
+                                    "state": "NY",
+                                    "zipCode": "10001"
+                                  },
+                                  "items": [
+                                    {"productId": "P004", "quantity": 1}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.subtotal").value(31.99))
+                .andExpect(jsonPath("$.fulfillmentFee").value(0.0))
+                .andExpect(jsonPath("$.total").value(31.99))
+                .andExpect(jsonPath("$.fulfillmentType").value("LOCAL_DELIVERY"))
+                .andExpect(jsonPath("$.promotionApplied").value(true));
+    }
+
+    @Test
     void createsOrderUsingDocumentedResponseShape() throws Exception {
         Order order = new Order("o100", "c1", "store24", "LOCAL_DELIVERY",
                 new BigDecimal("2.99"), "DoorDash",
