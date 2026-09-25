@@ -7,11 +7,12 @@ const { authState } = vi.hoisted(() => ({
   authState: { currentUser: null },
 }));
 
-const { createOrder, getCustomerProfile, getNearestStore, getStores } = vi.hoisted(() => ({
+const { createOrder, getCustomerProfile, getNearestStore, getStores, quoteOrder } = vi.hoisted(() => ({
   createOrder: vi.fn(),
   getCustomerProfile: vi.fn(),
   getNearestStore: vi.fn(),
   getStores: vi.fn(),
+  quoteOrder: vi.fn(),
 }));
 
 vi.mock("../context/AuthContext", () => ({
@@ -24,6 +25,7 @@ vi.mock("../api/client", () => ({
   getNearestStore,
   getProductImageUrl: (imageFileName) => `/images/products/${imageFileName}`,
   getStores,
+  quoteOrder,
 }));
 
 const cupcake = {
@@ -68,6 +70,17 @@ describe("CartDrawer", () => {
     getCustomerProfile.mockReset();
     getNearestStore.mockReset();
     getStores.mockReset();
+    quoteOrder.mockReset();
+    quoteOrder.mockResolvedValue({
+      fulfillmentType: "LOCAL_DELIVERY",
+      storeId: "store24",
+      subtotal: 9,
+      standardFulfillmentFee: 2.99,
+      fulfillmentFee: 2.99,
+      promotionSavings: 0,
+      promotionApplied: false,
+      estimatedTotal: 11.99,
+    });
     getCustomerProfile.mockResolvedValue({
       id: "c1",
       name: "Alex Carter",
@@ -120,6 +133,44 @@ describe("CartDrawer", () => {
 
     expect(screen.queryByText("Lemon Tart")).not.toBeInTheDocument();
     expect(screen.getByText("$9.00")).toBeInTheDocument();
+  });
+
+  it("shows fulfillment fee and free-shipping promotion before checkout", async () => {
+    quoteOrder.mockResolvedValue({
+      fulfillmentType: "SHIPPING",
+      storeId: "store17",
+      subtotal: 31.99,
+      standardFulfillmentFee: 4.99,
+      fulfillmentFee: 0,
+      promotionSavings: 4.99,
+      promotionApplied: true,
+      estimatedTotal: 31.99,
+    });
+
+    renderCart();
+
+    fireEvent.click(screen.getByRole("button", { name: "Add cupcake" }));
+    fireEvent.change(screen.getByLabelText("Increase quantity of Chocolate Cupcake"), { target: {} });
+    fireEvent.click(screen.getByRole("button", { name: "Increase quantity of Chocolate Cupcake" }));
+    fireEvent.click(screen.getByRole("button", { name: "Increase quantity of Chocolate Cupcake" }));
+    fireEvent.click(screen.getByRole("button", { name: "Increase quantity of Chocolate Cupcake" }));
+    fireEvent.click(screen.getByRole("button", { name: "Increase quantity of Chocolate Cupcake" }));
+    fireEvent.click(screen.getByRole("button", { name: "Increase quantity of Chocolate Cupcake" }));
+    fireEvent.click(screen.getByRole("button", { name: "Increase quantity of Chocolate Cupcake" }));
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Alex Carter" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "alex@example.com" } });
+    fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "555-0100" } });
+    fireEvent.change(screen.getByLabelText("Street"), { target: { value: "2490 Burnside Street" } });
+    fireEvent.change(screen.getByLabelText("City"), { target: { value: "Portland" } });
+    fireEvent.change(screen.getByLabelText("State"), { target: { value: "OR" } });
+    fireEvent.change(screen.getByLabelText("ZIP code"), { target: { value: "97205" } });
+
+    await waitFor(() => expect(quoteOrder).toHaveBeenCalled());
+    expect(await screen.findByText("Shipping fee")).toBeInTheDocument();
+    expect(screen.getByText("$4.99")).toBeInTheDocument();
+    expect(screen.getByText("$0.00")).toBeInTheDocument();
+    expect(screen.getByText("Free shipping promotion applied — saved $4.99.")).toBeInTheDocument();
+    expect(screen.getByText("$31.99")).toBeInTheDocument();
   });
 
   it("submits product IDs and quantities and displays the backend confirmation total", async () => {
