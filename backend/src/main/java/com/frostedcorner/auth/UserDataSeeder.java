@@ -1,6 +1,7 @@
 package com.frostedcorner.auth;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -25,14 +26,14 @@ public class UserDataSeeder implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         List<User> users = List.of(
-            user("user-customer", "customer@frostedcorner.demo", Role.CUSTOMER, "c1", null),
-                user("user-employee", "employee@frostedcorner.demo", Role.EMPLOYEE, "store1"),
-                user("user-manager", "manager@frostedcorner.demo", Role.MANAGER, "store1"),
-                user("user-owner", "owner@frostedcorner.demo", Role.OWNER, null));
-        users.forEach(this::saveIfMissingOrRepairCustomerLink);
+                user("user-customer", "customer@frostedcorner.demo",
+                        Role.CUSTOMER, "c1", null),
+                user("user-manager", "manager@frostedcorner.demo",
+                        Role.MANAGER, null, "store1"));
+        users.forEach(this::saveIfMissingOrRepairAssignments);
     }
 
-    private void saveIfMissingOrRepairCustomerLink(User seededUser) {
+    private void saveIfMissingOrRepairAssignments(User seededUser) {
         Optional<User> existing = userRepository.findByEmail(seededUser.getEmail());
         if (existing.isEmpty()) {
             userRepository.save(seededUser);
@@ -40,17 +41,22 @@ public class UserDataSeeder implements ApplicationRunner {
         }
 
         User existingUser = existing.get();
-        if (existingUser.getRole() == Role.CUSTOMER && existingUser.getCustomerId() == null) {
-            userRepository.save(new User(existingUser.getId(), existingUser.getEmail(),
-                    existingUser.getPasswordHash(), Role.CUSTOMER, "c1", null));
+        boolean assignmentsMatch = existingUser.getRole() == seededUser.getRole()
+                && Objects.equals(existingUser.getCustomerId(), seededUser.getCustomerId())
+                && Objects.equals(existingUser.getStoreId(), seededUser.getStoreId());
+
+        if (!assignmentsMatch) {
+            userRepository.save(new User(
+                    existingUser.getId(),
+                    existingUser.getEmail(),
+                    existingUser.getPasswordHash(),
+                    seededUser.getRole(),
+                    seededUser.getCustomerId(),
+                    seededUser.getStoreId()));
         }
     }
 
     private User user(String id, String email, Role role, String customerId, String storeId) {
         return new User(id, email, passwordEncoder.encode(DEMO_PASSWORD), role, customerId, storeId);
-    }
-
-    private User user(String id, String email, Role role, String storeId) {
-        return user(id, email, role, null, storeId);
     }
 }
