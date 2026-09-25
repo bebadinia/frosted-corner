@@ -7,8 +7,9 @@ const { authState } = vi.hoisted(() => ({
   authState: { currentUser: null },
 }));
 
-const { createOrder, getNearestStore, getStores } = vi.hoisted(() => ({
+const { createOrder, getCustomerProfile, getNearestStore, getStores } = vi.hoisted(() => ({
   createOrder: vi.fn(),
+  getCustomerProfile: vi.fn(),
   getNearestStore: vi.fn(),
   getStores: vi.fn(),
 }));
@@ -19,6 +20,7 @@ vi.mock("../context/AuthContext", () => ({
 
 vi.mock("../api/client", () => ({
   createOrder,
+  getCustomerProfile,
   getNearestStore,
   getProductImageUrl: (imageFileName) => `/images/products/${imageFileName}`,
   getStores,
@@ -63,8 +65,19 @@ describe("CartDrawer", () => {
   beforeEach(() => {
     authState.currentUser = null;
     createOrder.mockReset();
+    getCustomerProfile.mockReset();
     getNearestStore.mockReset();
     getStores.mockReset();
+    getCustomerProfile.mockResolvedValue({
+      id: "c1",
+      name: "Alex Carter",
+      email: "customer@frostedcorner.demo",
+      phone: "555-0100",
+      street: "101 Broadway",
+      city: "New York",
+      state: "NY",
+      zipCode: "10001",
+    });
     getStores.mockResolvedValue([
       {
         id: "store1",
@@ -196,12 +209,19 @@ describe("CartDrawer", () => {
     expect(screen.queryByLabelText("Street")).not.toBeInTheDocument();
   });
 
-  it("submits orders for a signed-in customer using the linked customer account", async () => {
+  it("prefills signed-in customer details and nearest takeout store", async () => {
     authState.currentUser = {
       id: "user-customer-1",
       role: "CUSTOMER",
-      customerId: "customer-42",
+      customerId: "c1",
     };
+    getNearestStore.mockResolvedValue({
+      nearestStore: { id: "store1" },
+      stores: [
+        { id: "store1", storeName: "Frosted Corner - New York", city: "New York", state: "NY" },
+        { id: "store24", storeName: "Frosted Corner - Portland", city: "Portland", state: "OR" },
+      ],
+    });
     createOrder.mockResolvedValue({
       id: "o102",
       status: "CONFIRMED",
@@ -213,23 +233,29 @@ describe("CartDrawer", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Add cupcake" }));
     fireEvent.click(screen.getByRole("button", { name: "Open cart" }));
-    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Alex Carter" } });
-    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "alex@example.com" } });
-    fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "555-0100" } });
+
+    await waitFor(() => expect(getCustomerProfile).toHaveBeenCalledWith("c1"));
+    await waitFor(() => {
+      expect(screen.getByLabelText("Name")).toHaveValue("Alex Carter");
+      expect(screen.getByLabelText("Email")).toHaveValue("customer@frostedcorner.demo");
+      expect(screen.getByLabelText("Phone")).toHaveValue("555-0100");
+      expect(screen.getByLabelText("ZIP code")).toHaveValue("10001");
+    });
+
     fireEvent.click(screen.getByLabelText("Takeout"));
 
-    await waitFor(() => expect(getStores).toHaveBeenCalled());
-    fireEvent.change(screen.getByLabelText("Pick up store"), { target: { value: "store24" } });
+    await waitFor(() => expect(getNearestStore).toHaveBeenCalledWith("10001"));
+    await waitFor(() => expect(screen.getByLabelText("Pick up store")).toHaveValue("store1"));
     fireEvent.click(screen.getByRole("button", { name: "PLACE ORDER" }));
 
     expect(createOrder).toHaveBeenCalledWith(
       {
-        customerId: "customer-42",
+        customerId: "c1",
         fulfillmentOption: "TAKEOUT",
-        storeId: "store24",
+        storeId: "store1",
         customer: {
           name: "Alex Carter",
-          email: "alex@example.com",
+          email: "customer@frostedcorner.demo",
           phone: "555-0100",
         },
         items: [{ productId: "p1", quantity: 1 }],
