@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.frostedcorner.catalog.Product;
 import com.frostedcorner.orders.Order;
 import com.frostedcorner.orders.OrderCustomer;
 import com.frostedcorner.orders.OrderItem;
@@ -43,6 +44,19 @@ class CustomerControllerTest {
                 .andExpect(jsonPath("$.id").value("c1"))
                 .andExpect(jsonPath("$.name").value("Alex Carter"))
                 .andExpect(jsonPath("$.zipCode").value("10001"));
+    }
+
+    @Test
+    void returnsHistoryBasedRecommendations() throws Exception {
+        when(customerService.getRecommendations("c1"))
+                .thenReturn(List.of(new Product(
+                        "P005", "Chocolate Fudge Cupcake", "Chocolate cupcake",
+                        new BigDecimal("4.49"), "Cupcakes", "cupcake.jpg", true)));
+
+        mockMvc.perform(get("/api/customers/c1/recommendations"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("P005"))
+                .andExpect(jsonPath("$[0].name").value("Chocolate Fudge Cupcake"));
     }
 
     @Test
