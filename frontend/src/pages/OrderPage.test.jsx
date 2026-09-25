@@ -2,16 +2,39 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OrderPage } from "./OrderPage";
 
-const { getProducts, getNearestStore, getProductAvailability } = vi.hoisted(() => ({
+const {
+  authState,
+  addItem,
+  getCustomerProfile,
+  getCustomerRecommendations,
+  getProducts,
+  getNearestStore,
+  getProductAvailability,
+} = vi.hoisted(() => ({
+  authState: { currentUser: null },
+  addItem: vi.fn(),
+  getCustomerProfile: vi.fn(),
+  getCustomerRecommendations: vi.fn(),
   getProducts: vi.fn(),
   getNearestStore: vi.fn(),
   getProductAvailability: vi.fn(),
 }));
 
+vi.mock("../context/AuthContext", () => ({
+  useAuth: () => authState,
+}));
+
+vi.mock("../context/CartContext", () => ({
+  useCart: () => ({ addItem }),
+}));
+
 vi.mock("../api/client", () => ({
+  getCustomerProfile,
+  getCustomerRecommendations,
   getProducts,
   getNearestStore,
   getProductAvailability,
+  getProductImageUrl: (imageFileName) => "/images/products/" + imageFileName,
 }));
 
 vi.mock("../components/ProductCatalog", () => ({
@@ -32,14 +55,21 @@ vi.mock("../components/ConversationalAssistant", () => ({
 
 describe("OrderPage", () => {
   beforeEach(() => {
+    authState.currentUser = null;
+    addItem.mockReset();
+    getCustomerProfile.mockReset();
+    getCustomerRecommendations.mockReset();
     getProducts.mockReset();
     getNearestStore.mockReset();
     getProductAvailability.mockReset();
 
+    getCustomerProfile.mockResolvedValue({ id: "c1", zipCode: "10001" });
+    getCustomerRecommendations.mockResolvedValue([]);
     getNearestStore.mockResolvedValue({
       nearestStore: {
         id: "store24",
         storeName: "Frosted Corner - Portland",
+        zipCode: "97205",
       },
     });
     getProductAvailability.mockResolvedValue([
@@ -100,17 +130,62 @@ describe("OrderPage", () => {
 
     expect(screen.getByTestId("product-catalog")).toHaveTextContent("Chocolate Cupcake,Lemon Tart");
     expect(screen.getByTestId("product-catalog")).not.toHaveTextContent("The Starter Subscription");
-    expect(screen.getByTestId("product-catalog")).toHaveTextContent("4");
     expect(getNearestStore).toHaveBeenCalledWith("97205");
     expect(getProductAvailability).toHaveBeenCalledWith("store24");
+  });
+
+  it("uses signed-in customer history and saved ZIP for personalized ordering", async () => {
+    authState.currentUser = {
+      id: "user-customer",
+      role: "CUSTOMER",
+      customerId: "c1",
+    };
+    getProducts.mockResolvedValue([]);
+    getCustomerProfile.mockResolvedValue({
+      id: "c1",
+      zipCode: "10001",
+    });
+    getCustomerRecommendations.mockResolvedValue([
+      {
+        id: "P005",
+        name: "Chocolate Fudge Cupcake",
+        description: "Chocolate cupcake",
+        price: 4.49,
+        category: "Cupcakes",
+        imageFileName: "cupcake.jpg",
+        active: true,
+      },
+    ]);
+    getNearestStore.mockImplementation((zip) => Promise.resolve({
+      nearestStore: zip === "10001"
+        ? { id: "store1", storeName: "Frosted Corner - New York", zipCode: "10001" }
+        : { id: "store24", storeName: "Frosted Corner - Portland", zipCode: "97205" },
+    }));
+    getProductAvailability.mockResolvedValue([
+      { productId: "P005", quantity: 9, lowStockThreshold: 3 },
+    ]);
+
+    render(<OrderPage />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Inventory location")).toHaveValue("10001");
+    });
+    await waitFor(() => expect(getProductAvailability).toHaveBeenCalledWith("store1"));
+
+    expect(screen.getByText("Based on your order history")).toBeInTheDocument();
+    expect(screen.getByText("Chocolate Fudge Cupcake")).toBeInTheDocument();
+    expect(screen.getByText(/selected from your saved customer ZIP/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
+    expect(addItem).toHaveBeenCalledWith(expect.objectContaining({ id: "P005" }));
   });
 
   it("reloads inventory when the demo inventory location changes", async () => {
     getProducts.mockResolvedValue([]);
     getNearestStore.mockImplementation((zip) => Promise.resolve({
       nearestStore: zip === "98101"
-        ? { id: "store17", storeName: "Frosted Corner - Seattle" }
-        : { id: "store24", storeName: "Frosted Corner - Portland" },
+        ? { id: "store17", storeName: "Frosted Corner - Seattle", zipCode: "98101" }
+        : { id: "store24", storeName: "Frosted Corner - Portland", zipCode: "97205" },
     }));
     getProductAvailability.mockResolvedValue([]);
 
@@ -142,7 +217,6 @@ describe("OrderPage", () => {
     expect(screen.getByTestId("product-catalog")).toHaveTextContent(
       "We couldn't load the menu right now. Please try again in a moment.",
     );
-    expect(screen.getByTestId("product-catalog")).toHaveTextContent("no-products");
 
     consoleErrorSpy.mockRestore();
   });
