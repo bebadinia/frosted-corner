@@ -87,6 +87,20 @@ export async function getCustomerOrderHistory(customerId) {
   return response.json();
 }
 
+
+export async function getCustomerRecommendations(customerId) {
+  const response = await fetch(
+    buildApiUrl(`/api/customers/${encodeURIComponent(customerId)}/recommendations`),
+    sessionOptions(),
+  );
+
+  if (!response.ok) {
+    throw new Error(await readError(response, "Unable to load personalized suggestions."));
+  }
+
+  return response.json();
+}
+
 export async function createOrder(order) {
   const response = await fetch(buildApiUrl("/api/orders"), sessionOptions({
     method: "POST",
