@@ -132,9 +132,7 @@ export function CartDrawer() {
         setStoreOptions(result.stores);
         setCheckoutForm((currentForm) => ({
           ...currentForm,
-          storeId: result.stores.some((store) => store.id === currentForm.storeId)
-            ? currentForm.storeId
-            : result.stores[0]?.id || "",
+          storeId: result.nearestStore?.id || result.stores[0]?.id || "",
         }));
       })
       .catch((requestError) => {
@@ -424,12 +422,10 @@ export function CartDrawer() {
                           maxLength="5"
                           name="zipCode"
                           onChange={handleFieldChange}
-                          placeholder="97205"
                           required
                           type="text"
                           value={checkoutForm.zipCode}
                         />
-                        <span className="text-xs font-normal text-muted-foreground">Use 97205 for the Portland demo.</span>
                       </label>
                     </div>
                   </div>
@@ -466,7 +462,7 @@ export function CartDrawer() {
                       </select>
                     </label>
                     {isLoadingStores ? <p className="text-xs text-muted-foreground">Loading store options…</p> : null}
-                    {/^d{5}$/.test(takeoutSortZip) ? (
+                    {/^\d{5}$/.test(takeoutSortZip) ? (
                       <p className="text-xs text-muted-foreground">Showing stores closest-to-farthest for ZIP {takeoutSortZip}.</p>
                     ) : (
                       <p className="text-xs text-muted-foreground">Enter a 5-digit ZIP to sort stores by distance. Delivery address is not required for takeout.</p>
