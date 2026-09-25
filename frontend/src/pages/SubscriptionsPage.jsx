@@ -34,7 +34,7 @@ export function SubscriptionsPage() {
       <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-primary">Subscriptions</div>
       <h1 className="font-serif text-4xl font-bold">Dessert Plans</h1>
       <p className="mx-auto mb-16 mt-4 max-w-2xl text-sm font-medium leading-7 text-muted-foreground">
-        This page maps the attached subscription design into the current storefront. The cards are ready for a backend subscription endpoint when that contract is implemented.
+        Preview the fixed MVP dessert plans. Subscription activation is not wired to the backend yet, so this page intentionally avoids non-working action buttons.
       </p>
 
       <div className="grid grid-cols-1 gap-8 text-left md:grid-cols-3">
@@ -62,16 +62,13 @@ export function SubscriptionsPage() {
                 </li>
               ))}
             </ul>
-            <button
-              className={`w-full rounded py-3 text-sm font-bold tracking-widest transition-colors ${
-                plan.popular
-                  ? "bg-primary text-white hover:bg-accent"
-                  : "border-2 border-primary text-primary hover:bg-primary hover:text-white"
-              }`}
-              type="button"
-            >
-              EXPLORE PLAN
-            </button>
+            <div className={`w-full rounded py-3 text-center text-xs font-bold uppercase tracking-widest ${
+              plan.popular
+                ? "bg-primary/10 text-primary"
+                : "border border-border text-muted-foreground"
+            }`}>
+              MVP plan preview
+            </div>
           </section>
         ))}
       </div>
