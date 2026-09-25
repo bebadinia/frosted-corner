@@ -20,7 +20,7 @@ export function LoginPage() {
       const user = await login(email, password);
       const fallbackDestination = user.role === "MANAGER" || user.role === "OWNER"
         ? "/franchise"
-        : "/";
+        : "/profile";
       navigate(location.state?.from || fallbackDestination, { replace: true });
     } catch (requestError) {
       setError(requestError.message || "Unable to sign in. Please try again.");
@@ -35,6 +35,29 @@ export function LoginPage() {
         <h1 id="login-heading" className="font-serif text-3xl font-bold">Sign in</h1>
         <p className="mt-2 text-sm text-muted-foreground">Use a Frosted Corner demo account to access role-specific tools.</p>
         {location.state?.notice ? <p role="status" className="mt-3 text-sm font-medium text-green-700">{location.state.notice}</p> : null}
+        <div className="mt-5 grid gap-2 text-xs">
+          <button
+            className="rounded border border-border bg-background px-3 py-2 text-left font-semibold hover:border-primary"
+            onClick={() => {
+              setEmail("customer@frostedcorner.demo");
+              setPassword("demo-password");
+            }}
+            type="button"
+          >
+            Customer demo — customer@frostedcorner.demo
+          </button>
+          <button
+            className="rounded border border-border bg-background px-3 py-2 text-left font-semibold hover:border-primary"
+            onClick={() => {
+              setEmail("manager@frostedcorner.demo");
+              setPassword("demo-password");
+            }}
+            type="button"
+          >
+            Manager demo — manager@frostedcorner.demo
+          </button>
+          <span className="text-muted-foreground">Demo password: demo-password</span>
+        </div>
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <label className="block text-sm font-bold" htmlFor="email">
             Email
