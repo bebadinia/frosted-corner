@@ -145,6 +145,26 @@ class OrderServiceTest {
     }
 
     @Test
+    void quotesPromotionalDeliveryFeeWithoutCreatingOrderOrChangingInventory() {
+        Product cake = product("P001", "Chocolate Cake", "32.99", true);
+        when(productRepository.findById("P001")).thenReturn(Optional.of(cake));
+        when(franchiseLocationService.rankStoresByDistance("2490 Burnside Street, Portland, OR 97205"))
+                .thenReturn(rankedStores("97205", nearestStore("store17", 25.01)));
+
+        OrderQuoteResponse quote = orderService.quoteOrder(deliveryRequest(List.of(
+                new CreateOrderItemRequest("P001", 1))));
+
+        assertEquals("SHIPPING", quote.fulfillmentType());
+        assertEquals(new BigDecimal("32.99"), quote.subtotal());
+        assertEquals(new BigDecimal("4.99"), quote.standardFulfillmentFee());
+        assertEquals(new BigDecimal("0.00"), quote.fulfillmentFee());
+        assertEquals(new BigDecimal("4.99"), quote.promotionSavings());
+        assertEquals(true, quote.promotionApplied());
+        assertEquals(new BigDecimal("32.99"), quote.estimatedTotal());
+        verifyNoInteractions(orderRepository, inventoryService);
+    }
+
+    @Test
     void createsTakeoutOrderWithoutRequiringDeliveryAddress() {
         Product cupcake = product("P005", "Chocolate Cupcake", "4.49", true);
         when(productRepository.findById("P005")).thenReturn(Optional.of(cupcake));
