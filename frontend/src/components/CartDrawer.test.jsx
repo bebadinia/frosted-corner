@@ -291,6 +291,7 @@ describe("CartDrawer", () => {
     });
 
     await waitFor(() => expect(getNearestStore).toHaveBeenCalledWith("97205"));
+    expect(screen.getByLabelText("Pick up store")).toHaveValue("store24");
     const options = screen.getAllByRole("option");
     expect(options.some((option) => option.textContent?.includes("Frosted Corner - Portland"))).toBe(true);
     expect(screen.getByText("Showing stores closest-to-farthest for ZIP 97205.")).toBeInTheDocument();
