@@ -90,7 +90,7 @@ export function SubscriptionsPage() {
                 ) : null}
                 <h2 className="font-serif text-2xl font-bold">{plan.name}</h2>
                 <p className="mb-6 mt-2 text-xl font-bold text-primary">
-                  {Number(plan.price).toFixed(2)} <span className="text-sm font-normal text-muted-foreground">/ month</span>
+                  ${Number(plan.price).toFixed(2)} <span className="text-sm font-normal text-muted-foreground">/ month</span>
                 </p>
                 <ul className="mb-8 space-y-3 text-sm font-medium text-foreground/80">
                   {features.map((feature) => (
