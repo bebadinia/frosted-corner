@@ -418,10 +418,6 @@ export function CartDrawer() {
             </div>
           ) : (
             <div className="mt-6 border-t border-border pt-6">
-              <div className="mb-4 flex items-center justify-between text-lg font-bold">
-                <span>Subtotal</span>
-                <span>${totalPrice.toFixed(2)}</span>
-              </div>
               <div className="mb-4 min-w-0 rounded border border-border bg-background p-4 text-sm">
                 <div className="font-bold text-foreground">Fulfillment</div>
                 <p className="mt-1 break-words text-muted-foreground">
@@ -576,6 +572,7 @@ export function CartDrawer() {
                 )}
               </div>
               <div className="mb-4 rounded border border-border bg-white p-4 text-sm">
+                <div className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-primary">Order summary</div>
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-muted-foreground">Subtotal</span>
                   <span className="font-semibold text-foreground">${totalPrice.toFixed(2)}</span>
