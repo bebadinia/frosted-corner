@@ -172,12 +172,30 @@ describe("OrderPage", () => {
     });
     await waitFor(() => expect(getProductAvailability).toHaveBeenCalledWith("store1"));
 
+    expect(screen.getByText("Picked for you")).toBeInTheDocument();
     expect(screen.getByText("Based on your order history")).toBeInTheDocument();
     expect(screen.getByText("Chocolate Fudge Cupcake")).toBeInTheDocument();
     expect(screen.getByText(/selected from your saved customer ZIP/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
     expect(addItem).toHaveBeenCalledWith(expect.objectContaining({ id: "P005" }));
+  });
+
+  it("keeps the Picked for you section visible while a signed-in customer has no active suggestions", async () => {
+    authState.currentUser = {
+      id: "user-customer",
+      role: "CUSTOMER",
+      customerId: "c1",
+    };
+    getProducts.mockResolvedValue([]);
+    getCustomerRecommendations.mockResolvedValue([]);
+
+    render(<OrderPage />);
+
+    expect(screen.getByText("Picked for you")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("No previous active items are available to recommend yet.")).toBeInTheDocument();
+    });
   });
 
   it("reloads inventory when the demo inventory location changes", async () => {
