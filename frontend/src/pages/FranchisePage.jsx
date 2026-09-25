@@ -214,7 +214,7 @@ export function FranchisePage({ currentUser: currentUserOverride }) {
         ) : null}
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-border bg-white shadow-sm">
+      <section id="inventory-supplies" className="scroll-mt-6 overflow-hidden rounded-xl border border-border bg-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-background/50 p-6">
           <h2 className="font-serif text-xl font-bold">Inventory Snapshot</h2>
           <span className="rounded bg-secondary px-2 py-1 text-xs font-bold text-primary">Frontend placeholder data</span>
