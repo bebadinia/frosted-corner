@@ -3,7 +3,7 @@ import {
   chatWithAssistant,
   createOrder,
   getAnalyticsSummary, getCustomerOrderHistory, getCustomerProfile,
-  getNearestStore, getProductAvailability, getStores,
+  getCustomerRecommendations, getNearestStore, getProductAvailability, getStores,
   getCurrentUser,
   login,
   logout,
@@ -71,6 +71,21 @@ describe("customer account requests", () => {
     await expect(getCustomerProfile("c1")).resolves.toEqual(profile);
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/customers/c1",
+      { credentials: "include" },
+    );
+  });
+
+  it("loads personalized suggestions for the linked customer", async () => {
+    const recommendations = [{ id: "P005", name: "Chocolate Fudge Cupcake" }];
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue(recommendations),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getCustomerRecommendations("c1")).resolves.toEqual(recommendations);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/customers/c1/recommendations",
       { credentials: "include" },
     );
   });
