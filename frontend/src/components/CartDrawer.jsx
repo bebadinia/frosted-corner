@@ -1,6 +1,12 @@
 import { CheckCircle2, LoaderCircle, Minus, Plus, ShoppingBag, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { createOrder, getNearestStore, getProductImageUrl, getStores } from "../api/client";
+import {
+  createOrder,
+  getCustomerProfile,
+  getNearestStore,
+  getProductImageUrl,
+  getStores,
+} from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 
@@ -72,6 +78,40 @@ export function CartDrawer() {
       setConfirmedOrder(null);
     }
   }, [confirmedOrder, items.length]);
+
+  useEffect(() => {
+    if (!isOpen || currentUser?.role !== "CUSTOMER" || !currentUser.customerId) {
+      return undefined;
+    }
+
+    let isCurrent = true;
+
+    getCustomerProfile(currentUser.customerId)
+      .then((profile) => {
+        if (!isCurrent) {
+          return;
+        }
+
+        setCheckoutForm((currentForm) => ({
+          ...currentForm,
+          name: profile.name || "",
+          email: profile.email || "",
+          phone: profile.phone || "",
+          street: profile.street || "",
+          city: profile.city || "",
+          state: profile.state || "",
+          zipCode: profile.zipCode || "",
+          takeoutSortLocation: profile.zipCode || "",
+        }));
+      })
+      .catch((requestError) => {
+        console.error("Unable to prefill checkout from customer profile.", requestError);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [currentUser?.customerId, currentUser?.role, isOpen]);
 
   useEffect(() => {
     if (!isOpen || baseStores.length > 0) {
