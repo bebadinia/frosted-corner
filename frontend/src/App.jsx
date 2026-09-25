@@ -1,6 +1,7 @@
 import { ArrowRight, BarChart3, Search, ShoppingBag, User } from "lucide-react";
 import {
   Link,
+  Navigate,
   Outlet,
   RouterProvider,
   createBrowserRouter,
@@ -17,9 +18,30 @@ import { FranchisePage } from "./pages/FranchisePage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { OrderHistoryPage } from "./pages/OrderHistoryPage";
 import { OrderPage } from "./pages/OrderPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { SignupPage } from "./pages/SignupPage";
 import { SubscriptionsPage } from "./pages/SubscriptionsPage";
+
+function RoleRoute({ allowedRoles, children }) {
+  const { currentUser, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) {
+    return <div className="p-8 text-sm text-muted-foreground">Checking account access…</div>;
+  }
+
+  if (!currentUser) {
+    return <Navigate replace state={{ from: location.pathname }} to="/login" />;
+  }
+
+  if (!allowedRoles.includes(currentUser.role)) {
+    return <Navigate replace to="/" />;
+  }
+
+  return children;
+}
 
 function Layout() {
   const location = useLocation();
@@ -71,6 +93,16 @@ function Layout() {
         <div className="mx-auto flex h-10 max-w-7xl items-center justify-between px-6 text-xs font-semibold tracking-wide">
           <AccessibilityBar />
           <div className="flex items-center">
+            {currentUser?.role === "CUSTOMER" ? (
+              <>
+                <Link className="flex h-full items-center border-r border-border px-4 transition-colors hover:text-primary" to="/profile">
+                  Profile
+                </Link>
+                <Link className="flex h-full items-center border-r border-border px-4 transition-colors hover:text-primary" to="/order-history">
+                  Order History
+                </Link>
+              </>
+            ) : null}
             {canViewAnalytics ? (
               <Link className="flex h-full items-center border-r border-border px-4 transition-colors hover:text-primary" to="/franchise">
                 Franchise Portal
@@ -143,6 +175,19 @@ function Layout() {
         </nav>
       </header>
 
+      {currentUser?.role === "CUSTOMER" ? (
+        <nav className="flex items-center justify-center gap-6 border-b border-border bg-secondary/30 px-4 py-2 text-xs font-bold uppercase tracking-wider md:hidden">
+          <Link className="hover:text-primary" to="/profile">Profile</Link>
+          <Link className="hover:text-primary" to="/order-history">Order History</Link>
+        </nav>
+      ) : null}
+
+      {currentUser?.role === "MANAGER" ? (
+        <nav className="flex items-center justify-center border-b border-border bg-secondary/30 px-4 py-2 text-xs font-bold uppercase tracking-wider md:hidden">
+          <Link className="hover:text-primary" to="/franchise">Franchise Dashboard</Link>
+        </nav>
+      ) : null}
+
       <main className="flex min-h-[calc(100vh-10rem)] flex-col">
         <Outlet />
       </main>
@@ -169,7 +214,30 @@ const router = createBrowserRouter([
       { path: "order", element: <OrderPage /> },
       { path: "subscriptions", element: <SubscriptionsPage /> },
       { path: "about", element: <AboutUsPage /> },
-      { path: "franchise", element: <FranchisePage /> },
+      {
+        path: "profile",
+        element: (
+          <RoleRoute allowedRoles={["CUSTOMER"]}>
+            <ProfilePage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "order-history",
+        element: (
+          <RoleRoute allowedRoles={["CUSTOMER"]}>
+            <OrderHistoryPage />
+          </RoleRoute>
+        ),
+      },
+      {
+        path: "franchise",
+        element: (
+          <RoleRoute allowedRoles={["MANAGER", "OWNER"]}>
+            <FranchisePage />
+          </RoleRoute>
+        ),
+      },
       { path: "*", element: <NotFoundPage /> },
     ],
   },
