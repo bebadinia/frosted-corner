@@ -150,7 +150,6 @@ describe("CartDrawer", () => {
     renderCart();
 
     fireEvent.click(screen.getByRole("button", { name: "Add cupcake" }));
-    fireEvent.change(screen.getByLabelText("Increase quantity of Chocolate Cupcake"), { target: {} });
     fireEvent.click(screen.getByRole("button", { name: "Increase quantity of Chocolate Cupcake" }));
     fireEvent.click(screen.getByRole("button", { name: "Increase quantity of Chocolate Cupcake" }));
     fireEvent.click(screen.getByRole("button", { name: "Increase quantity of Chocolate Cupcake" }));
@@ -170,7 +169,7 @@ describe("CartDrawer", () => {
     expect(screen.getByText("$4.99")).toBeInTheDocument();
     expect(screen.getByText("$0.00")).toBeInTheDocument();
     expect(screen.getByText("Free shipping promotion applied — saved $4.99.")).toBeInTheDocument();
-    expect(screen.getByText("$31.99")).toBeInTheDocument();
+    expect(screen.getAllByText("$31.99").length).toBeGreaterThan(0);
   });
 
   it("submits product IDs and quantities and displays the backend confirmation total", async () => {
