@@ -31,6 +31,16 @@ class DemoAiClientTest {
     }
 
     @Test
+    void detectsSingularCakeCartCommand() {
+        CustomerIntent intent = demoAiClient.interpret("Add the cake to my cart.");
+
+        assertThat(intent.intentType()).isEqualTo(AssistantIntentType.ADD_TO_CART);
+        assertThat(intent.quantity()).isEqualTo(1);
+        assertThat(intent.keywords()).containsExactly("cake");
+        assertThat(intent.addAllReferencedRecommendations()).isFalse();
+    }
+
+    @Test
     void detectsFaqIntent() {
         CustomerIntent intent = demoAiClient.interpret("How does ordering work?");
 
