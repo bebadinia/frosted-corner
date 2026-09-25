@@ -73,25 +73,17 @@ export function OrderPage() {
 
   useEffect(() => {
     if (currentUser?.role !== "CUSTOMER" || !currentUser.customerId) {
-      setRecommendations([]);
       setUsingSavedLocation(false);
       return undefined;
     }
 
     let isCurrent = true;
 
-    Promise.all([
-      getCustomerProfile(currentUser.customerId),
-      getCustomerRecommendations(currentUser.customerId),
-    ])
-      .then(([profile, suggestedProducts]) => {
+    getCustomerProfile(currentUser.customerId)
+      .then((profile) => {
         if (!isCurrent) {
           return;
         }
-
-        setRecommendations(
-          suggestedProducts.filter((product) => product.category !== "Subscriptions"),
-        );
 
         const savedLocation = INVENTORY_LOCATIONS.find(
           (location) => location.zip === profile.zipCode,
@@ -103,11 +95,36 @@ export function OrderPage() {
         }
       })
       .catch((requestError) => {
+        console.error("Unable to load saved customer location.", requestError);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [currentUser?.customerId, currentUser?.role]);
+
+  useEffect(() => {
+    if (currentUser?.role !== "CUSTOMER" || !currentUser.customerId) {
+      setRecommendations([]);
+      return undefined;
+    }
+
+    let isCurrent = true;
+
+    getCustomerRecommendations(currentUser.customerId)
+      .then((suggestedProducts) => {
+        if (isCurrent) {
+          setRecommendations(
+            suggestedProducts.filter((product) => product.category !== "Subscriptions"),
+          );
+        }
+      })
+      .catch((requestError) => {
         if (!isCurrent) {
           return;
         }
 
-        console.error("Unable to load personalized ordering context.", requestError);
+        console.error("Unable to load personalized suggestions.", requestError);
         setRecommendations([]);
       });
 
