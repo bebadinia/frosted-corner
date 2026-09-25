@@ -130,6 +130,17 @@ function Layout() {
             </button>
           </div>
         </div>
+        <nav className="flex items-center justify-center gap-6 border-t border-border px-4 py-3 text-[11px] font-bold tracking-wider lg:hidden sm:gap-8 sm:text-[13px]">
+          <Link className="transition-colors hover:text-primary" to="/order">
+            ORDER
+          </Link>
+          <Link className="transition-colors hover:text-primary" to="/subscriptions">
+            SUBSCRIPTIONS
+          </Link>
+          <Link className="transition-colors hover:text-primary" to="/about">
+            ABOUT US
+          </Link>
+        </nav>
       </header>
 
       <main className="flex min-h-[calc(100vh-10rem)] flex-col">
