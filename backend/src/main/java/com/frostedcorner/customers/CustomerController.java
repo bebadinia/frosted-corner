@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/customers")
+@RequestMapping("/api/customers/{customerId}")
 public class CustomerController {
 
     private final CustomerService customerService;
@@ -17,12 +17,12 @@ public class CustomerController {
         this.customerService = customerService;
     }
 
-    @GetMapping("/{customerId}")
+    @GetMapping
     public Customer getProfile(@PathVariable String customerId) {
         return customerService.getProfile(customerId);
     }
 
-    @GetMapping("/{customerId}/orders")
+    @GetMapping("/orders")
     public CustomerOrderHistoryResponse getOrderHistory(@PathVariable String customerId) {
         return customerService.getOrderHistory(customerId);
     }
