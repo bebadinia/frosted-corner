@@ -7,82 +7,16 @@ import { useCart } from "../context/CartContext";
 const guestCustomerId = import.meta.env.VITE_CUSTOMER_ID || "c1";
 const SIGNED_IN_DEMO_ZIP = "97205";
 
-const ADDRESS_PRESETS = [
-  {
-    value: "97205",
-    label: "Portland, OR 97205",
-    address: {
-      street: "2490 Burnside Street",
-      city: "Portland",
-      state: "OR",
-      zipCode: "97205",
-    },
-  },
-  {
-    value: "97301",
-    label: "Salem, OR 97301",
-    address: {
-      street: "145 Liberty Street SE",
-      city: "Salem",
-      state: "OR",
-      zipCode: "97301",
-    },
-  },
-  {
-    value: "98101",
-    label: "Seattle, WA 98101",
-    address: {
-      street: "1755 Pine Street",
-      city: "Seattle",
-      state: "WA",
-      zipCode: "98101",
-    },
-  },
-  {
-    value: "10001",
-    label: "New York, NY 10001",
-    address: {
-      street: "101 Broadway",
-      city: "New York",
-      state: "NY",
-      zipCode: "10001",
-    },
-  },
-  {
-    value: "60601",
-    label: "Chicago, IL 60601",
-    address: {
-      street: "315 Michigan Avenue",
-      city: "Chicago",
-      state: "IL",
-      zipCode: "60601",
-    },
-  },
-  {
-    value: "33130",
-    label: "Miami, FL 33130",
-    address: {
-      street: "3855 Biscayne Boulevard",
-      city: "Miami",
-      state: "FL",
-      zipCode: "33130",
-    },
-  },
-];
-
-const DEFAULT_ADDRESS_PRESET = ADDRESS_PRESETS[0];
-
 function createInitialCheckoutForm() {
   return {
     fulfillmentOption: "DELIVERY",
     name: "",
     email: "",
     phone: "",
-    street: DEFAULT_ADDRESS_PRESET.address.street,
-    city: DEFAULT_ADDRESS_PRESET.address.city,
-    state: DEFAULT_ADDRESS_PRESET.address.state,
-    zipCode: DEFAULT_ADDRESS_PRESET.address.zipCode,
-    deliveryPreset: DEFAULT_ADDRESS_PRESET.value,
+    street: "",
+    city: "",
+    state: "",
+    zipCode: "",
     takeoutSortLocation: "",
     storeId: "",
   };
@@ -227,19 +161,6 @@ export function CartDrawer() {
     setCheckoutForm((currentForm) => ({
       ...currentForm,
       [name]: value,
-    }));
-  };
-
-  const handleDeliveryPresetChange = (event) => {
-    const selectedPreset = ADDRESS_PRESETS.find((preset) => preset.value === event.target.value)
-      || DEFAULT_ADDRESS_PRESET;
-    setCheckoutForm((currentForm) => ({
-      ...currentForm,
-      deliveryPreset: selectedPreset.value,
-      street: selectedPreset.address.street,
-      city: selectedPreset.address.city,
-      state: selectedPreset.address.state,
-      zipCode: selectedPreset.address.zipCode,
     }));
   };
 
@@ -463,19 +384,6 @@ export function CartDrawer() {
                 {checkoutForm.fulfillmentOption === "DELIVERY" ? (
                   <div className="mt-4 grid gap-3">
                     <label className="grid min-w-0 gap-1 text-sm font-medium text-foreground">
-                      Delivery demo location
-                      <select
-                        className="w-full min-w-0 rounded border border-border px-3 py-2"
-                        name="deliveryPreset"
-                        onChange={handleDeliveryPresetChange}
-                        value={checkoutForm.deliveryPreset}
-                      >
-                        {ADDRESS_PRESETS.map((preset) => (
-                          <option key={preset.value} value={preset.value}>{preset.label}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="grid min-w-0 gap-1 text-sm font-medium text-foreground">
                       Street
                       <input
                         className="w-full min-w-0 rounded border border-border px-3 py-2"
@@ -513,12 +421,16 @@ export function CartDrawer() {
                         ZIP code
                         <input
                           className="w-full min-w-0 rounded border border-border px-3 py-2"
+                          inputMode="numeric"
+                          maxLength="5"
                           name="zipCode"
                           onChange={handleFieldChange}
+                          placeholder="97205"
                           required
                           type="text"
                           value={checkoutForm.zipCode}
                         />
+                        <span className="text-xs font-normal text-muted-foreground">Use 97205 for the Portland demo.</span>
                       </label>
                     </div>
                   </div>
