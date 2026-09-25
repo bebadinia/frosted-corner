@@ -49,6 +49,23 @@ public class OrderService {
         this.localDeliveryProviderAssigner = localDeliveryProviderAssigner;
     }
 
+    public OrderQuoteResponse quoteOrder(CreateOrderRequest request) {
+        validateRequest(request);
+
+        ResolvedFulfillment fulfillment = resolveFulfillment(request);
+        BigDecimal subtotal = calculateSubtotal(request.items());
+        BigDecimal fulfillmentFee = promotionalFulfillmentFee(
+                request.fulfillmentOption(), subtotal, fulfillment.fulfillmentFee());
+        boolean promotionApplied = fulfillment.fulfillmentFee().compareTo(fulfillmentFee) > 0;
+
+        return new OrderQuoteResponse(
+                subtotal,
+                fulfillmentFee,
+                subtotal.add(fulfillmentFee),
+                fulfillment.fulfillmentType().name(),
+                promotionApplied);
+    }
+
     public Order createOrder(CreateOrderRequest request) {
         validateRequest(request);
 
@@ -82,6 +99,20 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
         inventoryService.applyDeductions(deductions);
         return savedOrder;
+    }
+
+    private BigDecimal calculateSubtotal(List<CreateOrderItemRequest> requestedItems) {
+        BigDecimal subtotal = BigDecimal.ZERO;
+
+        for (CreateOrderItemRequest requestedItem : requestedItems) {
+            Product product = productRepository.findById(requestedItem.productId())
+                    .filter(Product::isActive)
+                    .orElseThrow(() -> new ProductNotFoundException(requestedItem.productId()));
+            subtotal = subtotal.add(product.getPrice()
+                    .multiply(BigDecimal.valueOf(requestedItem.quantity())));
+        }
+
+        return subtotal;
     }
 
     private void validateRequest(CreateOrderRequest request) {
