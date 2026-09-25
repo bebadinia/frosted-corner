@@ -71,7 +71,16 @@ public class ProductDataSeeder implements ApplicationRunner {
                     new BigDecimal("5.99"), "Seasonal", "caramel-apple-tart.jpg", true),
             new Product("P020", "Peppermint Chocolate Cupcake",
                     "Chocolate cupcake topped with peppermint frosting and chocolate crumbs.",
-                    new BigDecimal("4.99"), "Seasonal", "peppermint-chocolate-cupcake.jpg", false)
+                    new BigDecimal("4.99"), "Seasonal", "peppermint-chocolate-cupcake.jpg", false),
+            new Product("P021", "The Starter Subscription",
+                    "Monthly dessert plan with 4 hand-picked desserts and preference-based picks.",
+                    new BigDecimal("25.00"), "Subscriptions", "placeholder.svg", true),
+            new Product("P022", "Family Box Subscription",
+                    "Monthly family dessert box with 12 desserts plus 1 cake and seasonal swaps.",
+                    new BigDecimal("45.00"), "Subscriptions", "placeholder.svg", true),
+            new Product("P023", "Artisan Tier Subscription",
+                    "Premium monthly dessert plan with rotating selections and priority event planning.",
+                    new BigDecimal("80.00"), "Subscriptions", "placeholder.svg", true)
     );
 
     private final ProductRepository productRepository;

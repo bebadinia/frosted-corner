@@ -24,6 +24,9 @@ class ProductControllerTest {
     @MockitoBean
     private ProductService productService;
 
+    @MockitoBean
+    private CatalogAvailabilityService catalogAvailabilityService;
+
     @Test
     void returnsCatalogUsingDocumentedResponseShape() throws Exception {
         Product product = new Product("p1", "Chocolate Cupcake", "Chocolate cupcake with frosting",
@@ -39,5 +42,17 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$[0].category").value("Cupcakes"))
                 .andExpect(jsonPath("$[0].imageFileName").value("chocolate-cupcake.jpg"))
                 .andExpect(jsonPath("$[0].active").value(true));
+    }
+
+    @Test
+    void returnsStoreSpecificProductAvailability() throws Exception {
+        when(catalogAvailabilityService.getAvailability("store24"))
+                .thenReturn(List.of(new ProductAvailabilityResponse("P001", 4, 10)));
+
+        mockMvc.perform(get("/api/products/availability").param("storeId", "store24"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].productId").value("P001"))
+                .andExpect(jsonPath("$[0].quantity").value(4))
+                .andExpect(jsonPath("$[0].lowStockThreshold").value(10));
     }
 }

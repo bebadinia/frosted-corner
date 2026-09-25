@@ -121,6 +121,10 @@ describe("CartDrawer", () => {
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Alex Carter" } });
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "alex@example.com" } });
     fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "555-0100" } });
+    fireEvent.change(screen.getByLabelText("Street"), { target: { value: "2490 Burnside Street" } });
+    fireEvent.change(screen.getByLabelText("City"), { target: { value: "Portland" } });
+    fireEvent.change(screen.getByLabelText("State"), { target: { value: "OR" } });
+    fireEvent.change(screen.getByLabelText("ZIP code"), { target: { value: "97205" } });
     fireEvent.click(screen.getByRole("button", { name: "PLACE ORDER" }));
 
     expect(screen.getByRole("button", { name: "PLACING ORDER..." })).toBeDisabled();
@@ -287,26 +291,10 @@ describe("CartDrawer", () => {
     });
 
     await waitFor(() => expect(getNearestStore).toHaveBeenCalledWith("97205"));
+    expect(screen.getByLabelText("Pick up store")).toHaveValue("store24");
     const options = screen.getAllByRole("option");
     expect(options.some((option) => option.textContent?.includes("Frosted Corner - Portland"))).toBe(true);
     expect(screen.getByText("Showing stores closest-to-farthest for ZIP 97205.")).toBeInTheDocument();
-  });
-
-  it("automatically sorts takeout stores using the signed-in demo customer ZIP", async () => {
-    authState.currentUser = {
-      id: "user-customer-1",
-      role: "CUSTOMER",
-      customerId: "customer-42",
-    };
-    renderCart();
-
-    fireEvent.click(screen.getByRole("button", { name: "Add cupcake" }));
-    fireEvent.click(screen.getByRole("button", { name: "Open cart" }));
-    fireEvent.click(screen.getByLabelText("Takeout"));
-
-    await waitFor(() => expect(getNearestStore).toHaveBeenCalledWith("97205"));
-    expect(screen.getByText("Using your signed-in demo customer ZIP: 97205")).toBeInTheDocument();
-    expect(screen.queryByLabelText("ZIP code for nearby stores")).not.toBeInTheDocument();
   });
 
   it("shows a checkout error and keeps the cart available for retry", async () => {

@@ -3,25 +3,63 @@ import { getProductImageUrl } from "../api/client";
 import { useCart } from "../context/CartContext";
 import { useToast } from "../context/ToastContext";
 
-function buildRecommendation(products) {
-  if (products.length === 0) {
+function isSoldOut(product, availabilityByProductId) {
+  const stock = availabilityByProductId[product.id];
+  return stock ? stock.quantity <= 0 : false;
+}
+
+function buildRecommendation(products, availabilityByProductId) {
+  const availableProducts = products.filter(
+    (product) => !isSoldOut(product, availabilityByProductId),
+  );
+
+  if (availableProducts.length === 0) {
     return null;
   }
 
-  const seasonalProduct = products.find((product) => product.category === "Seasonal");
-  const featuredProduct = seasonalProduct || products[0];
+  const seasonalProduct = availableProducts.find((product) => product.category === "Seasonal");
+  const featuredProduct = seasonalProduct || availableProducts[0];
 
   return {
+    product: featuredProduct,
     title: featuredProduct.name,
-    reason: `Featured from the current ${featuredProduct.category} collection.`,
+    reason: "Featured from the current " + featuredProduct.category + " collection.",
     price: featuredProduct.price,
   };
 }
 
-export function ProductCatalog({ products, loading, error }) {
+function StockCaption({ stock }) {
+  if (!stock) {
+    return null;
+  }
+
+  if (stock.quantity <= 0) {
+    return <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Sold out</span>;
+  }
+
+  if (stock.quantity <= stock.lowStockThreshold) {
+    return <span className="text-xs font-bold text-amber-700">Low inventory — {stock.quantity} left</span>;
+  }
+
+  return null;
+}
+
+function productCardClass(soldOut) {
+  return soldOut
+    ? "flex gap-4 rounded-xl border border-border bg-muted/70 p-4 opacity-60 grayscale"
+    : "flex gap-4 rounded-xl border border-border bg-white p-4 transition-colors hover:border-primary";
+}
+
+export function ProductCatalog({
+  products,
+  loading,
+  error,
+  availabilityByProductId = {},
+  availabilityLoading = false,
+}) {
   const { addItem } = useCart();
   const { showToast } = useToast();
-  const recommendation = buildRecommendation(products);
+  const recommendation = buildRecommendation(products, availabilityByProductId);
 
   if (loading) {
     return (
@@ -47,6 +85,9 @@ export function ProductCatalog({ products, loading, error }) {
           <p className="mt-2 text-sm text-muted-foreground">
             Live product catalog sourced from Spring Boot. Prices and active products stay backend-owned.
           </p>
+          {availabilityLoading ? (
+            <p className="mt-1 text-xs text-muted-foreground">Checking store inventory…</p>
+          ) : null}
         </div>
         <div className="rounded-full border border-border px-4 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
           {products.length} active desserts
@@ -62,15 +103,15 @@ export function ProductCatalog({ products, loading, error }) {
             <div className="flex-1">
               <h3 className="font-serif text-xl font-bold">{recommendation.title}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{recommendation.reason}</p>
+              <div className="mt-2">
+                <StockCaption stock={availabilityByProductId[recommendation.product.id]} />
+              </div>
             </div>
             <button
               className="rounded bg-primary px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-accent"
               onClick={() => {
-                const featuredProduct = products.find((product) => product.name === recommendation.title);
-                if (featuredProduct) {
-                  addItem(featuredProduct);
-                  showToast(`${featuredProduct.name} added to cart.`);
-                }
+                addItem(recommendation.product);
+                showToast(recommendation.product.name + " added to cart.");
               }}
               type="button"
             >
@@ -81,41 +122,47 @@ export function ProductCatalog({ products, loading, error }) {
       ) : null}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {products.map((product) => (
-          <article
-            key={product.id}
-            className="flex gap-4 rounded-xl border border-border bg-white p-4 transition-colors hover:border-primary"
-          >
-            <img
-              alt={product.name}
-              className="h-24 w-24 shrink-0 rounded bg-muted object-cover"
-              src={getProductImageUrl(product.imageFileName)}
-            />
-            <div className="flex flex-1 flex-col justify-between gap-3">
-              <div>
-                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                  {product.category}
+        {products.map((product) => {
+          const stock = availabilityByProductId[product.id];
+          const soldOut = stock ? stock.quantity <= 0 : false;
+
+          return (
+            <article key={product.id} className={productCardClass(soldOut)}>
+              <img
+                alt={product.name}
+                className="h-24 w-24 shrink-0 rounded bg-muted object-cover"
+                src={getProductImageUrl(product.imageFileName)}
+              />
+              <div className="flex flex-1 flex-col justify-between gap-3">
+                <div>
+                  <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                    {product.category}
+                  </div>
+                  <h3 className="font-serif text-xl font-bold leading-tight">{product.name}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">{product.description}</p>
+                  <div className="mt-2">
+                    <StockCaption stock={stock} />
+                  </div>
                 </div>
-                <h3 className="font-serif text-xl font-bold leading-tight">{product.name}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{product.description}</p>
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">${product.price.toFixed(2)}</span>
+                  <button
+                    aria-label={soldOut ? product.name + " sold out" : "Add " + product.name + " to cart"}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-primary transition-colors hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-secondary disabled:hover:text-primary"
+                    disabled={soldOut}
+                    onClick={() => {
+                      addItem(product);
+                      showToast(product.name + " added to cart.");
+                    }}
+                    type="button"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="font-semibold">${product.price.toFixed(2)}</span>
-                <button
-                  aria-label={`Add ${product.name} to cart`}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-primary transition-colors hover:bg-primary hover:text-white"
-                  onClick={() => {
-                    addItem(product);
-                    showToast(`${product.name} added to cart.`);
-                  }}
-                  type="button"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
     </div>
   );

@@ -2,27 +2,27 @@ import { useState } from "react";
 import { MapPin } from "lucide-react";
 import { getNearestStore } from "../api/client";
 
-const APPROVED_DEMO_LOCATIONS = [
-  { value: "97205", label: "Portland, OR 97205" },
-  { value: "98101", label: "Seattle, WA 98101" },
-  { value: "10001", label: "New York, NY 10001" },
-  { value: "60601", label: "Chicago, IL 60601" },
-  { value: "33130", label: "Miami, FL 33130" },
-];
-
 export function StoreFinderPanel() {
-  const [selectedLocation, setSelectedLocation] = useState(APPROVED_DEMO_LOCATIONS[0].value);
+  const [zipCode, setZipCode] = useState("");
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
+    const normalizedZip = zipCode.trim();
+
+    if (!/^\d{5}$/.test(normalizedZip)) {
+      setResult(null);
+      setError("Enter a 5-digit ZIP code.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
-      const nextResult = await getNearestStore(selectedLocation);
+      const nextResult = await getNearestStore(normalizedZip);
       setResult(nextResult);
     } catch (requestError) {
       setResult(null);
@@ -42,24 +42,23 @@ export function StoreFinderPanel() {
         <div>
           <h2 id="store-finder-heading" className="font-serif text-2xl font-bold">Find the nearest Frosted Corner</h2>
           <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            Choose one approved demo customer ZIP code and compare the nearest stores using backend-calculated Haversine distance.
+            Enter your ZIP code to compare nearby stores.
           </p>
         </div>
       </div>
 
       <form className="mt-6 grid gap-4 md:grid-cols-[1fr_auto]" onSubmit={handleSubmit}>
         <label className="text-sm font-semibold text-foreground" htmlFor="store-finder-location">
-          Demo customer location
-          <select
+          ZIP code
+          <input
             className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm"
             id="store-finder-location"
-            onChange={(event) => setSelectedLocation(event.target.value)}
-            value={selectedLocation}
-          >
-            {APPROVED_DEMO_LOCATIONS.map((location) => (
-              <option key={location.value} value={location.value}>{location.label}</option>
-            ))}
-          </select>
+            inputMode="numeric"
+            maxLength="5"
+            onChange={(event) => setZipCode(event.target.value)}
+            type="text"
+            value={zipCode}
+          />
         </label>
         <button
           className="self-end rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"

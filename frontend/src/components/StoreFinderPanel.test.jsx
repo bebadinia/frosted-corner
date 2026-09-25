@@ -54,6 +54,7 @@ describe("StoreFinderPanel", () => {
 
     render(<StoreFinderPanel />);
 
+    fireEvent.change(screen.getByLabelText("ZIP code"), { target: { value: "97205" } });
     fireEvent.click(screen.getByRole("button", { name: "Find nearest store" }));
 
     await screen.findByRole("heading", { name: "Frosted Corner - Portland" });
@@ -69,6 +70,7 @@ describe("StoreFinderPanel", () => {
 
     render(<StoreFinderPanel />);
 
+    fireEvent.change(screen.getByLabelText("ZIP code"), { target: { value: "99999" } });
     fireEvent.click(screen.getByRole("button", { name: "Find nearest store" }));
 
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(
@@ -101,7 +103,7 @@ describe("StoreFinderPanel", () => {
 
     render(<StoreFinderPanel />);
 
-    fireEvent.change(screen.getByLabelText("Demo customer location"), {
+    fireEvent.change(screen.getByLabelText("ZIP code"), {
       target: { value: "98101" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Find nearest store" }));
