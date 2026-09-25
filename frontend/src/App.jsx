@@ -43,8 +43,9 @@ function Layout() {
                 Insights
               </Link>
             ) : null}
-            <span className="rounded-lg px-4 py-3 text-muted-foreground">Inventory & Supplies</span>
-            <span className="rounded-lg px-4 py-3 text-muted-foreground">Customers</span>
+            <a className="rounded-lg px-4 py-3 text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary" href="#inventory-supplies">
+              Inventory & Supplies
+            </a>
           </nav>
           <div className="border-t border-border p-4">
             <Link
@@ -74,9 +75,6 @@ function Layout() {
                 Franchise Portal
               </Link>
             ) : null}
-            <span className="flex h-full items-center border-r border-border px-4 text-muted-foreground">
-              Track Order
-            </span>
             {isLoading ? null : currentUser ? (
               <button
                 className="flex h-full items-center gap-1.5 pl-4 text-muted-foreground hover:text-primary"
@@ -115,9 +113,9 @@ function Layout() {
           </nav>
 
           <div className="flex items-center gap-4">
-            <button aria-label="Search catalog" className="text-foreground lg:hidden" type="button">
+            <Link aria-label="Browse catalog" className="text-foreground lg:hidden" to="/order">
               <Search className="h-6 w-6" />
-            </button>
+            </Link>
             <button aria-label="Open cart" className="relative text-foreground" onClick={openCart} type="button">
               <ShoppingBag className="h-6 w-6" />
               {totalItems > 0 ? (
