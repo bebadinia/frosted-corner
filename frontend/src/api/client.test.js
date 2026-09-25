@@ -6,6 +6,7 @@ import {
   getCustomerRecommendations, getNearestStore, getProductAvailability, getStores,
   getCurrentUser,
   login,
+  quoteOrder,
   logout,
   register,
 } from "./client";
@@ -103,6 +104,49 @@ describe("customer account requests", () => {
       "/api/customers/c1/orders",
       { credentials: "include" },
     );
+  });
+});
+
+describe("quoteOrder", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("requests the authoritative backend fulfillment quote", async () => {
+    const request = {
+      customerId: "c1",
+      fulfillmentOption: "DELIVERY",
+      customer: {
+        name: "Alex Carter",
+        email: "alex@example.com",
+        phone: "555-0100",
+        street: "101 Broadway",
+        city: "New York",
+        state: "NY",
+        zipCode: "10001",
+      },
+      items: [{ productId: "P004", quantity: 1 }],
+    };
+    const quote = {
+      subtotal: 31.99,
+      fulfillmentFee: 0,
+      total: 31.99,
+      fulfillmentType: "LOCAL_DELIVERY",
+      promotionApplied: true,
+    };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue(quote),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(quoteOrder(request)).resolves.toEqual(quote);
+    expect(fetchMock).toHaveBeenCalledWith("/api/orders/quote", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
   });
 });
 
