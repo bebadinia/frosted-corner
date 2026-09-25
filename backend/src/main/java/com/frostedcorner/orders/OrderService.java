@@ -25,6 +25,8 @@ public class OrderService {
     private static final double LOCAL_DELIVERY_MAX_DISTANCE_MILES = 25.0;
     private static final BigDecimal LOCAL_DELIVERY_FEE = new BigDecimal("2.99");
     private static final BigDecimal SHIPPING_FEE = new BigDecimal("4.99");
+    private static final BigDecimal FREE_SHIPPING_THRESHOLD = new BigDecimal("25.00");
+    private static final BigDecimal FREE_FULFILLMENT_FEE = new BigDecimal("0.00");
     private static final BigDecimal TAKEOUT_FEE = BigDecimal.ZERO;
 
     private final OrderRepository orderRepository;
@@ -70,11 +72,13 @@ public class OrderService {
 
         List<InventoryDeduction> deductions = inventoryService.validateAvailability(
         fulfillment.storeId(), requestedQuantities);
+        BigDecimal fulfillmentFee = promotionalFulfillmentFee(
+                request.fulfillmentOption(), subtotal, fulfillment.fulfillmentFee());
     Order order = new Order(null, request.customerId(), fulfillment.storeId(),
-        fulfillment.fulfillmentType().name(), fulfillment.fulfillmentFee(),
+        fulfillment.fulfillmentType().name(), fulfillmentFee,
         fulfillment.fulfillmentProvider(), fulfillment.customer(),
         fulfillment.deliveryAddress(), CONFIRMED_STATUS, orderItems,
-        subtotal.add(fulfillment.fulfillmentFee()), Instant.now());
+        subtotal.add(fulfillmentFee), Instant.now());
         Order savedOrder = orderRepository.save(order);
         inventoryService.applyDeductions(deductions);
         return savedOrder;
@@ -164,6 +168,17 @@ public class OrderService {
 
         return new ResolvedFulfillment(FulfillmentType.SHIPPING, nearestStore.id(), SHIPPING_FEE,
                 null, customer, deliveryAddress);
+    }
+
+    private BigDecimal promotionalFulfillmentFee(
+            CheckoutFulfillmentOption fulfillmentOption,
+            BigDecimal subtotal,
+            BigDecimal standardFee) {
+        if (fulfillmentOption == CheckoutFulfillmentOption.DELIVERY
+                && subtotal.compareTo(FREE_SHIPPING_THRESHOLD) > 0) {
+            return FREE_FULFILLMENT_FEE;
+        }
+        return standardFee;
     }
 
     private String formatDemoAddress(CreateOrderCustomerRequest customer) {
