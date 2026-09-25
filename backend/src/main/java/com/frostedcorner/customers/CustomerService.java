@@ -1,6 +1,8 @@
 package com.frostedcorner.customers;
 
 import com.frostedcorner.auth.CustomerAccessService;
+import com.frostedcorner.catalog.Product;
+import com.frostedcorner.catalog.ProductService;
 import com.frostedcorner.orders.Order;
 import com.frostedcorner.orders.OrderItem;
 import com.frostedcorner.orders.OrderRepository;
@@ -19,13 +21,16 @@ public class CustomerService {
 
     private final CustomerRepository customerRepository;
     private final OrderRepository orderRepository;
+    private final ProductService productService;
     private final CustomerAccessService customerAccessService;
 
     public CustomerService(CustomerRepository customerRepository,
                            OrderRepository orderRepository,
+                           ProductService productService,
                            CustomerAccessService customerAccessService) {
         this.customerRepository = customerRepository;
         this.orderRepository = orderRepository;
+        this.productService = productService;
         this.customerAccessService = customerAccessService;
     }
 
@@ -40,6 +45,19 @@ public class CustomerService {
         customerAccessService.requireCustomerAccess(customerId);
         List<Order> orders = orderRepository.findAllByCustomerIdOrderByCreatedAtDesc(customerId);
         return new CustomerOrderHistoryResponse(orders, favoriteItems(orders));
+    }
+
+    public List<Product> getRecommendations(String customerId) {
+        customerAccessService.requireCustomerAccess(customerId);
+        List<Order> orders = orderRepository.findAllByCustomerIdOrderByCreatedAtDesc(customerId);
+        Map<String, Product> activeProductsById = productService.getActiveProducts().stream()
+                .collect(java.util.stream.Collectors.toMap(Product::getId, product -> product));
+
+        return favoriteItems(orders).stream()
+                .map(FavoriteItemResponse::productId)
+                .map(activeProductsById::get)
+                .filter(java.util.Objects::nonNull)
+                .toList();
     }
 
     private List<FavoriteItemResponse> favoriteItems(List<Order> orders) {
