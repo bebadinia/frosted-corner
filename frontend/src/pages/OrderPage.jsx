@@ -119,7 +119,7 @@ export function OrderPage() {
           ) : null}
         </div>
         <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-          Inventory ZIP
+          Inventory location
           <select
             className="ml-3 rounded border border-border bg-background px-3 py-2 text-sm font-medium normal-case tracking-normal text-foreground"
             onChange={(event) => setSelectedInventoryZip(event.target.value)}
@@ -127,7 +127,7 @@ export function OrderPage() {
           >
             {INVENTORY_LOCATIONS.map((location) => (
               <option key={location.zip} value={location.zip}>
-                {location.label} ({location.zip})
+                {location.label}
               </option>
             ))}
           </select>
