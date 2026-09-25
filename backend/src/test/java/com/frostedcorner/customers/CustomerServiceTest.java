@@ -5,6 +5,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.frostedcorner.auth.CustomerAccessService;
+import com.frostedcorner.catalog.Product;
+import com.frostedcorner.catalog.ProductService;
 import com.frostedcorner.orders.Order;
 import com.frostedcorner.orders.OrderCustomer;
 import com.frostedcorner.orders.OrderItem;
@@ -27,6 +29,9 @@ class CustomerServiceTest {
 
     @Mock
     private OrderRepository orderRepository;
+
+    @Mock
+    private ProductService productService;
 
     @Mock
     private CustomerAccessService customerAccessService;
@@ -65,6 +70,34 @@ class CustomerServiceTest {
                 new FavoriteItemResponse("P008", "Chocolate Chip Cookie", 6),
                 new FavoriteItemResponse("P011", "Classic Fudge Brownie", 2)),
                 result.favoriteItems());
+    }
+
+    @Test
+    void recommendsTopPreviouslyOrderedActiveProducts() {
+        when(orderRepository.findAllByCustomerIdOrderByCreatedAtDesc("c1"))
+                .thenReturn(List.of(
+                        order("o2", List.of(
+                                item("P005", "Chocolate Fudge Cupcake", 2),
+                                item("P008", "Chocolate Chip Cookie", 6))),
+                        order("o1", List.of(
+                                item("P005", "Chocolate Fudge Cupcake", 4),
+                                item("P011", "Classic Fudge Brownie", 2)))));
+        Product cupcake = new Product(
+                "P005", "Chocolate Fudge Cupcake", "Chocolate cupcake",
+                new BigDecimal("4.49"), "Cupcakes", "cupcake.jpg", true);
+        Product cookie = new Product(
+                "P008", "Chocolate Chip Cookie", "Chocolate chip cookie",
+                new BigDecimal("2.99"), "Cookies", "cookie.jpg", true);
+        Product brownie = new Product(
+                "P011", "Classic Fudge Brownie", "Fudge brownie",
+                new BigDecimal("4.49"), "Brownies", "brownie.jpg", true);
+        when(productService.getActiveProducts()).thenReturn(List.of(cupcake, cookie, brownie));
+
+        List<Product> recommendations = customerService.getRecommendations("c1");
+
+        verify(customerAccessService).requireCustomerAccess("c1");
+        assertEquals(List.of("P005", "P008", "P011"),
+                recommendations.stream().map(Product::getId).toList());
     }
 
     private Order order(String id, List<OrderItem> items) {
