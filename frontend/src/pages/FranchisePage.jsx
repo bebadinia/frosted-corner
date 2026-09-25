@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { getAnalyticsSummary } from "../api/client";
+import {
+  getAnalyticsSummary,
+  getProductAvailability,
+  getProducts,
+  getStores,
+} from "../api/client";
 import { useAuth } from "../context/AuthContext";
-
-const INVENTORY_ROWS = [
-  { id: "inv-1", item: "Classic Chocolate Cake", category: "Cakes", stock: 14, threshold: 10, unit: "cakes" },
-  { id: "inv-2", item: "Vanilla Sprinkle Cupcake", category: "Cupcakes", stock: 36, threshold: 24, unit: "cupcakes" },
-  { id: "inv-3", item: "Chocolate Chip Cookie", category: "Cookies", stock: 72, threshold: 40, unit: "cookies" },
-  { id: "inv-4", item: "Pastry Boxes", category: "Supplies", stock: 120, threshold: 50, unit: "boxes" },
-];
 
 function InventoryStatus({ stock, threshold }) {
   if (stock <= threshold * 0.6) {
@@ -122,6 +120,8 @@ export function FranchisePage({ currentUser: currentUserOverride }) {
   const accessDenied = !isManager && !isOwner;
   const configurationError = isManager && !managerStoreId;
   const [summary, setSummary] = useState(null);
+  const [inventoryRows, setInventoryRows] = useState([]);
+  const [storeLabel, setStoreLabel] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -138,6 +138,30 @@ export function FranchisePage({ currentUser: currentUserOverride }) {
         ...(isManager ? { storeId: managerStoreId } : {}),
       });
       setSummary(result);
+
+      if (isManager) {
+        const [availability, products, stores] = await Promise.all([
+          getProductAvailability(managerStoreId),
+          getProducts(),
+          getStores(),
+        ]);
+        const productsById = Object.fromEntries(products.map((product) => [product.id, product]));
+        setInventoryRows(
+          availability
+            .map((stock) => ({
+              ...stock,
+              product: productsById[stock.productId],
+            }))
+            .filter((row) => row.product && row.product.category !== "Subscriptions")
+            .slice(0, 8),
+        );
+        const store = stores.find((location) => location.id === managerStoreId);
+        setStoreLabel(
+          store
+            ? `${store.storeName} — ${store.city}, ${store.state}`
+            : managerStoreId,
+        );
+      }
     } catch (requestError) {
       console.error("Unable to load analytics.", requestError);
       setSummary(null);
@@ -168,7 +192,7 @@ export function FranchisePage({ currentUser: currentUserOverride }) {
             <h2 id="sales-analytics-heading" className="font-serif text-2xl font-bold">Sales Analytics</h2>
             {!accessDenied && !configurationError ? (
               <p className="mt-1 text-sm font-medium text-muted-foreground">
-                {isManager ? `Store: ${managerStoreId}` : "All stores"}
+                {isManager ? (storeLabel || `Store: ${managerStoreId}`) : "All stores"}
               </p>
             ) : null}
           </div>
@@ -214,38 +238,45 @@ export function FranchisePage({ currentUser: currentUserOverride }) {
         ) : null}
       </section>
 
-      <section id="inventory-supplies" className="scroll-mt-6 overflow-hidden rounded-xl border border-border bg-white shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-background/50 p-6">
-          <h2 className="font-serif text-xl font-bold">Inventory Snapshot</h2>
-          <span className="rounded bg-secondary px-2 py-1 text-xs font-bold text-primary">Frontend placeholder data</span>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[42rem] text-left text-sm">
-            <thead className="bg-background text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="px-6 py-4">Item</th>
-                <th className="px-6 py-4">Category</th>
-                <th className="px-6 py-4">Stock Level</th>
-                <th className="px-6 py-4">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {INVENTORY_ROWS.map((row) => (
-                <tr key={row.id} className="border-t border-border">
-                  <td className="px-6 py-4 font-bold">{row.item}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{row.category}</td>
-                  <td className="px-6 py-4 font-medium">
-                    {row.stock} {row.unit}
-                  </td>
-                  <td className="px-6 py-4">
-                    <InventoryStatus stock={row.stock} threshold={row.threshold} />
-                  </td>
+      {isManager ? (
+        <section id="inventory-supplies" className="scroll-mt-6 overflow-hidden rounded-xl border border-border bg-white shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-background/50 p-6">
+            <div>
+              <h2 className="font-serif text-xl font-bold">Branch Inventory Snapshot</h2>
+              <p className="mt-1 text-xs text-muted-foreground">Live inventory from the manager's assigned store.</p>
+            </div>
+            <span className="rounded bg-secondary px-2 py-1 text-xs font-bold text-primary">{managerStoreId}</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[42rem] text-left text-sm">
+              <thead className="bg-background text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-6 py-4">Item</th>
+                  <th className="px-6 py-4">Category</th>
+                  <th className="px-6 py-4">Stock Level</th>
+                  <th className="px-6 py-4">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              </thead>
+              <tbody>
+                {inventoryRows.length === 0 ? (
+                  <tr className="border-t border-border">
+                    <td className="px-6 py-4 text-muted-foreground" colSpan="4">No inventory data available.</td>
+                  </tr>
+                ) : inventoryRows.map((row) => (
+                  <tr key={row.productId} className="border-t border-border">
+                    <td className="px-6 py-4 font-bold">{row.product.name}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{row.product.category}</td>
+                    <td className="px-6 py-4 font-medium">{row.quantity}</td>
+                    <td className="px-6 py-4">
+                      <InventoryStatus stock={row.quantity} threshold={row.lowStockThreshold} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
