@@ -84,6 +84,36 @@ public class OrderService {
         return savedOrder;
     }
 
+    public OrderQuoteResponse quoteOrder(CreateOrderRequest request) {
+        validateRequest(request);
+
+        ResolvedFulfillment fulfillment = resolveFulfillment(request);
+        BigDecimal subtotal = BigDecimal.ZERO;
+
+        for (CreateOrderItemRequest requestedItem : request.items()) {
+            Product product = productRepository.findById(requestedItem.productId())
+                    .filter(Product::isActive)
+                    .orElseThrow(() -> new ProductNotFoundException(requestedItem.productId()));
+            subtotal = subtotal.add(product.getPrice()
+                    .multiply(BigDecimal.valueOf(requestedItem.quantity())));
+        }
+
+        BigDecimal fulfillmentFee = promotionalFulfillmentFee(
+                request.fulfillmentOption(), subtotal, fulfillment.fulfillmentFee());
+        BigDecimal promotionSavings = fulfillment.fulfillmentFee().subtract(fulfillmentFee);
+        boolean promotionApplied = promotionSavings.compareTo(BigDecimal.ZERO) > 0;
+
+        return new OrderQuoteResponse(
+                fulfillment.fulfillmentType().name(),
+                fulfillment.storeId(),
+                subtotal,
+                fulfillment.fulfillmentFee(),
+                fulfillmentFee,
+                promotionSavings,
+                promotionApplied,
+                subtotal.add(fulfillmentFee));
+    }
+
     private void validateRequest(CreateOrderRequest request) {
         if (request == null) {
             throw new InvalidOrderException("order request is required");
