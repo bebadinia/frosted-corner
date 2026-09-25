@@ -6,6 +6,7 @@ import {
   getNearestStore,
   getProductImageUrl,
   getStores,
+  quoteOrder,
 } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -58,10 +59,40 @@ export function CartDrawer() {
   const [storeOptions, setStoreOptions] = useState([]);
   const [storesError, setStoresError] = useState("");
   const [isLoadingStores, setIsLoadingStores] = useState(false);
+  const [orderQuote, setOrderQuote] = useState(null);
+  const [quoteError, setQuoteError] = useState("");
+  const [isLoadingQuote, setIsLoadingQuote] = useState(false);
   const customerId = currentUser?.role === "CUSTOMER" && currentUser.customerId
     ? currentUser.customerId
     : guestCustomerId;
   const takeoutSortZip = checkoutForm.takeoutSortLocation.trim();
+
+  const buildOrderRequest = () => {
+    const isTakeout = checkoutForm.fulfillmentOption === "TAKEOUT";
+
+    return {
+      customerId,
+      fulfillmentOption: checkoutForm.fulfillmentOption,
+      ...(isTakeout ? { storeId: checkoutForm.storeId } : {}),
+      customer: {
+        name: checkoutForm.name,
+        email: checkoutForm.email,
+        phone: checkoutForm.phone,
+        ...(isTakeout
+          ? {}
+          : {
+              street: checkoutForm.street,
+              city: checkoutForm.city,
+              state: checkoutForm.state,
+              zipCode: checkoutForm.zipCode,
+            }),
+      },
+      items: items.map(({ product, quantity }) => ({
+        productId: product.id,
+        quantity,
+      })),
+    };
+  };
 
   const handleCloseCart = () => {
     closeCart();
@@ -193,6 +224,79 @@ export function CartDrawer() {
     };
   }, [baseStores, isOpen, takeoutSortZip]);
 
+  useEffect(() => {
+    if (!isOpen || items.length === 0) {
+      setOrderQuote(null);
+      setQuoteError("");
+      return undefined;
+    }
+
+    const isTakeout = checkoutForm.fulfillmentOption === "TAKEOUT";
+    const hasContact = Boolean(
+      checkoutForm.name.trim()
+      && checkoutForm.email.trim()
+      && checkoutForm.phone.trim(),
+    );
+    const hasDeliveryAddress = Boolean(
+      checkoutForm.street.trim()
+      && checkoutForm.city.trim()
+      && checkoutForm.state.trim()
+      && /^\d{5}$/.test(checkoutForm.zipCode.trim()),
+    );
+    const canQuote = hasContact
+      && (isTakeout ? Boolean(checkoutForm.storeId) : hasDeliveryAddress);
+
+    if (!canQuote) {
+      setOrderQuote(null);
+      setQuoteError("");
+      return undefined;
+    }
+
+    let isCurrent = true;
+    setIsLoadingQuote(true);
+    setQuoteError("");
+
+    quoteOrder(buildOrderRequest())
+      .then((quote) => {
+        if (isCurrent) {
+          setOrderQuote(quote);
+        }
+      })
+      .catch((requestError) => {
+        if (!isCurrent) {
+          return;
+        }
+
+        setOrderQuote(null);
+        setQuoteError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Unable to calculate fulfillment fees.",
+        );
+      })
+      .finally(() => {
+        if (isCurrent) {
+          setIsLoadingQuote(false);
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [
+    checkoutForm.city,
+    checkoutForm.email,
+    checkoutForm.fulfillmentOption,
+    checkoutForm.name,
+    checkoutForm.phone,
+    checkoutForm.state,
+    checkoutForm.storeId,
+    checkoutForm.street,
+    checkoutForm.zipCode,
+    isOpen,
+    items,
+  ]);
+
   const handleFieldChange = (event) => {
     const { name, value } = event.target;
     setCheckoutForm((currentForm) => ({
@@ -210,31 +314,7 @@ export function CartDrawer() {
     setCheckoutError("");
 
     try {
-      const isTakeout = checkoutForm.fulfillmentOption === "TAKEOUT";
-      const order = await createOrder(
-        {
-          customerId,
-          fulfillmentOption: checkoutForm.fulfillmentOption,
-          ...(isTakeout ? { storeId: checkoutForm.storeId } : {}),
-          customer: {
-            name: checkoutForm.name,
-            email: checkoutForm.email,
-            phone: checkoutForm.phone,
-            ...(isTakeout
-              ? {}
-              : {
-                  street: checkoutForm.street,
-                  city: checkoutForm.city,
-                  state: checkoutForm.state,
-                  zipCode: checkoutForm.zipCode,
-                }),
-          },
-          items: items.map(({ product, quantity }) => ({
-            productId: product.id,
-            quantity,
-          })),
-        },
-      );
+      const order = await createOrder(buildOrderRequest());
 
       setConfirmedOrder(order);
       clearCart();
@@ -351,9 +431,51 @@ export function CartDrawer() {
             </div>
           ) : (
             <div className="mt-6 border-t border-border pt-6">
-              <div className="mb-4 flex items-center justify-between text-lg font-bold">
-                <span>Subtotal</span>
-                <span>${totalPrice.toFixed(2)}</span>
+              <div className="mb-4 rounded border border-border bg-white p-4">
+                <div className="flex items-center justify-between text-lg font-bold">
+                  <span>Subtotal</span>
+                  <span>${totalPrice.toFixed(2)}</span>
+                </div>
+                {isLoadingQuote ? (
+                  <p className="mt-2 text-xs text-muted-foreground">Calculating fulfillment fee…</p>
+                ) : orderQuote ? (
+                  <div className="mt-3 space-y-2 border-t border-border pt-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span>
+                        {orderQuote.fulfillmentType === "SHIPPING"
+                          ? "Shipping fee"
+                          : orderQuote.fulfillmentType === "LOCAL_DELIVERY"
+                            ? "Local delivery fee"
+                            : "Pickup fee"}
+                      </span>
+                      <span className="font-semibold">
+                        {orderQuote.promotionApplied ? (
+                          <>
+                            <span className="mr-2 text-muted-foreground line-through">
+                              ${Number(orderQuote.standardFulfillmentFee).toFixed(2)}
+                            </span>
+                            ${Number(orderQuote.fulfillmentFee).toFixed(2)}
+                          </>
+                        ) : (
+                          <>${Number(orderQuote.fulfillmentFee).toFixed(2)}</>
+                        )}
+                      </span>
+                    </div>
+                    {orderQuote.promotionApplied ? (
+                      <p className="rounded bg-secondary px-2 py-1 text-xs font-semibold text-primary">
+                        Free shipping promotion applied — saved ${Number(orderQuote.promotionSavings).toFixed(2)}.
+                      </p>
+                    ) : null}
+                    <div className="flex items-center justify-between border-t border-border pt-2 font-bold">
+                      <span>Estimated total</span>
+                      <span>${Number(orderQuote.estimatedTotal).toFixed(2)}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Complete your fulfillment details to see the shipping or delivery fee before ordering.
+                  </p>
+                )}
               </div>
               <div className="mb-4 min-w-0 rounded border border-border bg-background p-4 text-sm">
                 <div className="font-bold text-foreground">Fulfillment</div>
@@ -508,6 +630,11 @@ export function CartDrawer() {
                   </div>
                 )}
               </div>
+              {quoteError ? (
+                <p className="mb-4 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800" role="status">
+                  {quoteError}
+                </p>
+              ) : null}
               {checkoutError ? (
                 <p className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
                   {checkoutError}
