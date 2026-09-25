@@ -101,6 +101,23 @@ export async function getCustomerRecommendations(customerId) {
   return response.json();
 }
 
+export async function quoteOrder(order) {
+  const response = await fetch(buildApiUrl("/api/orders/quote"), sessionOptions({
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(order),
+  }));
+
+  if (!response.ok) {
+    throw new Error(await readError(response,
+      "Unable to calculate shipping and delivery fees."));
+  }
+
+  return response.json();
+}
+
 export async function createOrder(order) {
   const response = await fetch(buildApiUrl("/api/orders"), sessionOptions({
     method: "POST",
