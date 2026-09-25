@@ -83,6 +83,47 @@ class OrderControllerTest {
     }
 
     @Test
+    void returnsOrderQuoteWithoutCreatingOrder() throws Exception {
+        OrderQuoteResponse quote = new OrderQuoteResponse(
+                "SHIPPING",
+                "store17",
+                new BigDecimal("31.99"),
+                new BigDecimal("4.99"),
+                new BigDecimal("0.00"),
+                new BigDecimal("4.99"),
+                true,
+                new BigDecimal("31.99"));
+        when(orderService.quoteOrder(any(CreateOrderRequest.class))).thenReturn(quote);
+
+        mockMvc.perform(post("/api/orders/quote")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "customerId":"c1",
+                                  "fulfillmentOption":"DELIVERY",
+                                  "customer":{
+                                    "name":"Alex Carter",
+                                    "email":"alex@example.com",
+                                    "phone":"555-0100",
+                                    "street":"101 Broadway",
+                                    "city":"New York",
+                                    "state":"NY",
+                                    "zipCode":"10001"
+                                  },
+                                  "items":[{"productId":"P004","quantity":1}]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fulfillmentType").value("SHIPPING"))
+                .andExpect(jsonPath("$.standardFulfillmentFee").value(4.99))
+                .andExpect(jsonPath("$.fulfillmentFee").value(0.00))
+                .andExpect(jsonPath("$.promotionSavings").value(4.99))
+                .andExpect(jsonPath("$.promotionApplied").value(true))
+                .andExpect(jsonPath("$.estimatedTotal").value(31.99));
+        verify(orderService).quoteOrder(any(CreateOrderRequest.class));
+    }
+
+    @Test
     void rejectsMissingCustomerId() throws Exception {
         mockMvc.perform(post("/api/orders")
                         .contentType(MediaType.APPLICATION_JSON)
